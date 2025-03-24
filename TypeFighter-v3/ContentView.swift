@@ -8,17 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @ObservedObject var singlePlayerVM = SinglePlayerVM()
+    @State var singlePlayerShow: Bool = true
 
-#Preview {
-    ContentView()
+    
+    var body: some View {
+        ZStack{
+            GameView(vm: singlePlayerVM, singlePlayerShow: $singlePlayerShow)
+        }
+    }
 }
