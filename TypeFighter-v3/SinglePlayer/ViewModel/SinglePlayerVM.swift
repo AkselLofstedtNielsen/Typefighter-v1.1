@@ -31,33 +31,7 @@ class SinglePlayerVM : ObservableObject {
     @Published var gameWon = false
     @Published var gameLost = false
     
-    @WordListStorage(key: "wordListSinglePlayer")
-    var localWords: [String]
-    
-    init() {
-        //When singleplayer starts, check if list is empty? fill from db?
-        print("init SinglePlayerVM")
-        syncWordsIfNeeded()
-    }
-    
-
-    func syncWordsIfNeeded(){
-        if(localWords.isEmpty){
-         print("empty local words, fetching from db")
-        }
-        else{
-            fetchWordsFromDB()
-        }
-        
-    }
-    func fetchWordsFromDB() {
-        print("fetching words from db")
-            //Fetch and fill local from db
-        localWords = ["AKSEL", "NIELSEN", "ÄR","EN","KUNG", "OCH", "PROFFS", "PÅ", "ALLT", "TYP"]
-        
-        gameList.fillList(list: localWords)
-    
-    }
+   
     func testing(letter: Character) {
         if wordFound{
             guard let index = gameList.words.firstIndex(where: {$0.id == id}) else { return }
@@ -107,7 +81,7 @@ class SinglePlayerVM : ObservableObject {
         let check: Double = timePlayed .truncatingRemainder(dividingBy: 2.0)
         let checkRounded = check.roundToDecimal(1)
         if  checkRounded == 0.1{
-            gameList.addRandomWord()
+            gameList.addRandomWordToGame()
         }
     }
     
@@ -127,8 +101,9 @@ class SinglePlayerVM : ObservableObject {
           
           gameWon = false
           gameLost = false
-          gameList.startPositions()
-          
+          gameList.fillList()
+
+          gameList.setStartingPositions()
           gameRunning = true
           isTimerRunning = true
           timePlayed = 0.0
