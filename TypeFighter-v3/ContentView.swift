@@ -6,15 +6,15 @@
 //
 
 import SwiftUI
+import os
 
 struct ContentView: View {
     @ObservedObject var singlePlayerVM = SinglePlayerVM()
     @State var singlePlayerShow: Bool = true
-
     
     var body: some View {
         ZStack{
-            GameView(vm: singlePlayerVM, singlePlayerShow: $singlePlayerShow)
+            StartScreenView()
         }
     }
 }

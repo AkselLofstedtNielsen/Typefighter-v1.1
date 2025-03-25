@@ -6,42 +6,49 @@
 //
 
 import SwiftUI
+import OSLog
 
     struct TypingView: View {
-        @ObservedObject var typingVM: SinglePlayerVM
-        
+        @ObservedObject var singlePlayerVM: SinglePlayerVM
+        //@State var finished: Bool = false
         var body: some View {
-            VStack{
-                
-                if !typingVM.gameRunning{
-                    typeHereAnimation()
+            ZStack{
+                VStack{
+                    //if !typingVM.gameRunning{
+                    //    //Bad laggy animation
+                    //    typeHereAnimation(
+                    //        finished: $finished
+                    //    )
+                    //}
+                    if !singlePlayerVM.gameRunning{
+                        Button(action: {
+                            singlePlayerVM.restartGame()
+                        }) {
+                            Text("Start")
+                        }
+                    }
+                    
+                    TextField("", text: $singlePlayerVM.userText)
+                        .frame(height: 75).border(.purple)
+                        .textFieldStyle(.automatic)
+                        .multilineTextAlignment(.center)
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.characters)
+                        .foregroundColor(.white)
+                        .onChange(of: singlePlayerVM.userText) { newValue in
+                            singlePlayerVM.userText = singlePlayerVM.userText
+                            
+                            if singlePlayerVM.userText.last != nil{
+                                singlePlayerVM.testing(letter: singlePlayerVM.userText.last!)
+                            }
+                            else{
+                                singlePlayerVM.wordFound = false
+                            }
+                            
+                        }
                 }
-                
-                TextField("", text: $typingVM.userText)
-                    .onTapGesture {
-                        if !typingVM.gameRunning{
-                            typingVM.restartGame()
-                        }
-                        
-                    }
-                    .frame(height: 75).border(.purple)
-                    .textFieldStyle(.automatic)
-                    .multilineTextAlignment(.center)
-                    .autocorrectionDisabled(true)
-                    .textInputAutocapitalization(.characters)
-                    .foregroundColor(.white)
-                    .onChange(of: typingVM.userText) { newValue in
-                        typingVM.userText = typingVM.userText
-                        
-                        if typingVM.userText.last != nil{
-                            typingVM.testing(letter: typingVM.userText.last!)
-                        }
-                        else{
-                            typingVM.wordFound = false
-                        }
-                        
-                    }
             }
+
         }
     }
 

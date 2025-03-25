@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 class SinglePlayerVM : ObservableObject {
 
@@ -23,30 +24,55 @@ class SinglePlayerVM : ObservableObject {
     @Published var id = UUID()
     @Published var letterPosition = 1
     
-    @Published var list = WordList()
+    @Published var gameList = WordListSinglePlayer()
     
     @Published var gameSpeed : Double = 9.0
     
     @Published var gameWon = false
     @Published var gameLost = false
     
-
+    @WordListStorage(key: "wordListSinglePlayer")
+    var localWords: [String]
     
+    init() {
+        //When singleplayer starts, check if list is empty? fill from db?
+        print("init SinglePlayerVM")
+        syncWordsIfNeeded()
+    }
+    
+
+    func syncWordsIfNeeded(){
+        if(localWords.isEmpty){
+         print("empty local words, fetching from db")
+        }
+        else{
+            fetchWordsFromDB()
+        }
+        
+    }
+    func fetchWordsFromDB() {
+        print("fetching words from db")
+            //Fetch and fill local from db
+        localWords = ["AKSEL", "NIELSEN", "ÄR","EN","KUNG", "OCH", "PROFFS", "PÅ", "ALLT", "TYP"]
+        
+        gameList.fillList(list: localWords)
+    
+    }
     func testing(letter: Character) {
         if wordFound{
-            guard let index = list.words.firstIndex(where: {$0.id == id}) else { return }
+            guard let index = gameList.words.firstIndex(where: {$0.id == id}) else { return }
             
-            print("i ord: \(list.words[index].word)")
+            print("i ord: \(gameList.words[index].word)")
             
-            let wordInLetters = list.words[index].letters
+            let wordInLetters = gameList.words[index].letters
             
             if wordInLetters[letterPosition] == letter{
                 if letterPosition == wordInLetters.count - 1{
                     print("Ord skrivet")
                     resetWord()
-                    list.words.remove(at: index)
+                    gameList.words.remove(at: index)
                     
-                    if list.gameWords.isEmpty && list.words.isEmpty{
+                    if gameList.gameWords.isEmpty && gameList.words.isEmpty{
                     
                         gameWon = true
                         stopGame()
@@ -64,7 +90,7 @@ class SinglePlayerVM : ObservableObject {
             
         }
         if !wordFound{
-            for word in list.words{
+            for word in gameList.words{
                 if word.letter == letter{
                     print("Ja")
                     id = word.id
@@ -81,7 +107,7 @@ class SinglePlayerVM : ObservableObject {
         let check: Double = timePlayed .truncatingRemainder(dividingBy: 2.0)
         let checkRounded = check.roundToDecimal(1)
         if  checkRounded == 0.1{
-            list.addRandomWord()
+            gameList.addRandomWord()
         }
     }
     
@@ -98,10 +124,10 @@ class SinglePlayerVM : ObservableObject {
       }
       
       func restartGame() {
+          
           gameWon = false
           gameLost = false
-          list.fillList()
-          list.startPositions()
+          gameList.startPositions()
           
           gameRunning = true
           isTimerRunning = true
@@ -110,7 +136,7 @@ class SinglePlayerVM : ObservableObject {
       }
     func checkDead(){
         if playerLife == 0{
-            list.clearAll()
+            gameList.clearAll()
             stopGame()
             gameLost = true
             

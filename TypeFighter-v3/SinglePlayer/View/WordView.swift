@@ -23,12 +23,12 @@ struct WordView : View {
             .onAppear(perform: {
                 animate.toggle()
                 DispatchQueue.main.asyncAfter(deadline: .now() + typingVM.gameSpeed) {
-                    let contains = typingVM.list.words.contains { contain in
+                    let contains = typingVM.gameList.words.contains { contain in
                         return contain.word == word.word
                     }
                     if contains{
                         word.dead.toggle()
-                        typingVM.list.words.removeAll(where: {$0.id == word.id})
+                        typingVM.gameList.words.removeAll(where: {$0.id == word.id})
                         typingVM.playerLife -= 1
                         typingVM.checkDead()
                     }

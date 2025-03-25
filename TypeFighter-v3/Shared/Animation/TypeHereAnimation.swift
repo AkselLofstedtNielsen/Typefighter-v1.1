@@ -9,21 +9,36 @@ import Foundation
 import SwiftUI
 
 struct typeHereAnimation: View{
-    @State var bouncing = false
+    @Binding var finished: Bool
 
+    @State var bouncing = false
+    @State var timeRemaining: Int = 5
+    
+    let countDownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
     var body: some View {
-        VStack{
-            VStack(spacing: 5){
-                Text("Tap when ready")
-                    .foregroundColor(.white)
-                Image(systemName: "arrow.down")
-                    .foregroundColor(.white)
-            }
-            .offset(y: bouncing ? -5: -15)
-            .animation(.easeIn(duration: 1).repeatForever())
-            .onAppear(){
-                self.bouncing.toggle()
+        ZStack{
+            VStack{
+                VStack(spacing: 5){
+                    Text("\(timeRemaining)")
+                        .foregroundColor(.white)
+                    Image(systemName: "arrow.down")
+                        .foregroundColor(.white)
+                }
+                .offset(y: bouncing ? -5: -15)
+                .animation(.easeIn(duration: 1).repeatForever())
+                .onAppear(){
+                    self.bouncing.toggle()
+                }
             }
         }
+        .onReceive(countDownTimer){time in
+            if timeRemaining > 0{
+                timeRemaining -= 1
+            }else{
+                finished = true
+            }
+        }
+        
     }
 }

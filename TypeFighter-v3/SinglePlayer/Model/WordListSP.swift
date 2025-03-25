@@ -9,17 +9,16 @@
 import Foundation
 
 //Wordlist = fylls av firebase, fyller resten av projekten.
-class WordList: ObservableObject{
+class WordListSinglePlayer: ObservableObject{
     @Published var words : [Word] = []
-    
     @Published var gameWords : [Word] = []
     
-
-    func fillList(){
-        gameWords.append(Word(word: "OrdEtt", xPos: 0,yPos: 0))
-        gameWords.append(Word(word: "OrdTvå", xPos: 0,yPos: 0))
-        gameWords.append(Word(word: "OrdTre", xPos: 0,yPos: 0))
-        gameWords.append(Word(word: "OrdFyr", xPos: 0,yPos: 0))
+    
+    
+    func fillList(list: [String]){
+        for wrd in list{
+            gameWords.append(Word(word: wrd, xPos: 0, yPos: 0))
+        }
     }
     func addRandomWord(){
         guard let word = gameWords.randomElement() else {return}

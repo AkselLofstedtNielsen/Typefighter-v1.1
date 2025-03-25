@@ -42,7 +42,7 @@ struct GameView: View {
                     }
                 FallingWords(typingVM: vm)
                 Spacer()
-                TypingView(typingVM: vm)
+                TypingView(singlePlayerVM: vm)
             }
             .background(Color.black)
 
