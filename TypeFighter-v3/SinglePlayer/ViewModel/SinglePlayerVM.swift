@@ -31,10 +31,13 @@ class SinglePlayerVM : ObservableObject {
     @Published var gameWon = false
     @Published var gameLost = false
     
+    
     func handleBackspace(){
+        print("HandleBackspace")
+        //Setting Option? if u want to clear all or regular backspace when pressed
         //What should backspace do in singlelayer? maybe move to common VM?
         if !userText.isEmpty{
-            userText.removeLast()
+            userText.removeAll()
         }
         
         
