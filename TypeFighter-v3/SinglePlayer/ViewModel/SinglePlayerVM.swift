@@ -31,7 +31,14 @@ class SinglePlayerVM : ObservableObject {
     @Published var gameWon = false
     @Published var gameLost = false
     
-   
+    func handleBackspace(){
+        //What should backspace do in singlelayer? maybe move to common VM?
+        if !userText.isEmpty{
+            userText.removeLast()
+        }
+        
+        
+    }
     func testing(letter: Character) {
         if wordFound{
             guard let index = gameList.words.firstIndex(where: {$0.id == id}) else { return }

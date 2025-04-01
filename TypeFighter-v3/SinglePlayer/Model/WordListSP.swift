@@ -8,7 +8,6 @@
 
 import Foundation
 
-//Wordlist = fylls av firebase, fyller resten av projekten.
 class WordListSinglePlayer: ObservableObject{
     @Published var words : [Word] = []
     @Published var gameWords : [Word] = []

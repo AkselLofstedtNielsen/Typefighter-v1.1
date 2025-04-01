@@ -8,6 +8,7 @@
 import SwiftUI
 import OSLog
 
+//Om man skriver säg AKSE och sedan backar ur till 0 och sedan börjar skriva ett nytt ord så stannar vi i AKSEL ordet. Fixa,
     struct TypingView: View {
         @ObservedObject var singlePlayerVM: SinglePlayerVM
         //@State var finished: Bool = false
@@ -28,25 +29,24 @@ import OSLog
                         }
                     }
                     
-                    TextField("", text: $singlePlayerVM.userText)
-                        .frame(height: 75).border(.purple)
-                        .textFieldStyle(.automatic)
-                        .multilineTextAlignment(.center)
-                        .autocorrectionDisabled(true)
-                        .textInputAutocapitalization(.characters)
-                        .foregroundColor(.white)
-                        .onChange(of: singlePlayerVM.userText) { newValue in
-                            singlePlayerVM.userText = singlePlayerVM.userText
-                            
-                            if singlePlayerVM.userText.last != nil{
-                                singlePlayerVM.testing(letter: singlePlayerVM.userText.last!)
-                            }
-                            else{
-                                singlePlayerVM.wordFound = false
-                            }
-                            
+                    CustomTextField(text: $singlePlayerVM.userText, onKeyPress: { char in
+                        //handle keypresss
+                        if let lastChar = char.last{
+                            singlePlayerVM.testing(letter: lastChar)
                         }
-                }
+                    }, onBackspace: {
+                        // Handle backspace
+                        singlePlayerVM.handleBackspace()
+                    }
+                )
+                .frame(height: 75)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.purple, lineWidth: 2)
+                )
+                .padding()
+            }
+                    
             }
 
         }
