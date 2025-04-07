@@ -10,23 +10,32 @@ import OSLog
 
 class SinglePlayerVM : ObservableObject {
 
+    //Game state
+    @Published var gameState: GameState = .notStarted
+    //TODO implement gamestate
     @Published var playerLife : Int = 3
-
-    @Published var timePlayed = 0.0
-
+    @Published var elapsedTime = 0.0
+    @Published var score = 0
+    @Published var wordsPerMinute = 0.0
     
+    //Word tracking
+    @Published var words: [Word] = []
+    @Published var activeWordId: UUID?
+    @Published var currentUserInput = ""
+    
+    //Settings
+    @Published var difficulty: Difficulty = .easy
+    
+    //Private props
+    @Published var gameList = WordListSinglePlayer()
     @Published var isTimerRunning = false
     @Published var gameRunning = false
-    @Published var WPS : Double = 0.0
     
     @Published var userText = ""
     @Published var wordFound = false
     @Published var id = UUID()
     @Published var letterPosition = 1
     
-    @Published var gameList = WordListSinglePlayer()
-    
-    @Published var gameSpeed : Double = 9.0
     
     @Published var gameWon = false
     @Published var gameLost = false
@@ -88,7 +97,7 @@ class SinglePlayerVM : ObservableObject {
         
       }
     func addWordToGame(){
-        let check: Double = timePlayed .truncatingRemainder(dividingBy: 2.0)
+        let check: Double = elapsedTime .truncatingRemainder(dividingBy: 2.0)
         let checkRounded = check.roundToDecimal(1)
         if  checkRounded == 0.1{
             gameList.addRandomWordToGame()
@@ -102,7 +111,7 @@ class SinglePlayerVM : ObservableObject {
       }
       
       func stopGame() {
-          timePlayed = 0
+          elapsedTime = 0
           isTimerRunning = false
           gameRunning = false
       }
@@ -116,7 +125,7 @@ class SinglePlayerVM : ObservableObject {
           gameList.setStartingPositions()
           gameRunning = true
           isTimerRunning = true
-          timePlayed = 0.0
+          elapsedTime = 0.0
           playerLife = 3
       }
     func checkDead(){

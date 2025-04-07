@@ -19,10 +19,11 @@ struct WordView : View {
     var body: some View{
         HighlightedText(word.word, matching: typingVM.userText)
             .offset(x: word.xPos, y: animate ? 200 : word.yPos)
-            .animation(.linear(duration: typingVM.gameSpeed), value: animate)
+            .animation(.linear(duration: typingVM.difficulty.fallingDuration), value: animate)
             .onAppear(perform: {
+                print( "falling duration: " + typingVM.difficulty.rawValue)
                 animate.toggle()
-                DispatchQueue.main.asyncAfter(deadline: .now() + typingVM.gameSpeed) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + typingVM.difficulty.fallingDuration) {
                     let contains = typingVM.gameList.words.contains { contain in
                         return contain.word == word.word
                     }

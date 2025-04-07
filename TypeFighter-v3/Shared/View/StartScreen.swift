@@ -11,120 +11,120 @@ import SwiftUI
 struct StartScreenView: View {
     @ObservedObject var singlePlayerVM = SinglePlayerVM()
     @State var singlePlayerShow = false
-    
+    @State private var selectedDifficulty: Difficulty = .easy
+    @State private var showSettings: Bool = false
     
     var body: some View {
         
         if(singlePlayerShow){
             GameView(vm: singlePlayerVM, singlePlayerShow: $singlePlayerShow)
         }else{
-            
-            ZStack{
-                VStack{
-                    HStack{
-                        Spacer()
-                        
-                        Button(action:{
-                            
-                        }){
-                            Image(systemName: "person.circle")
-                                .frame(width: 35.0,height: 35.0)
-                                .foregroundColor(.white)
-                            
-                        }
-                        .buttonStyle(.bordered)
-                        .background(Color.purple)
-                        
-                        
-                        
-                    }//_Hstack
-                    Spacer()
-                    
-                    Text("TYPE FIGHT")
-                        .font(.system(size: 30))
-                        .bold()
-                        .foregroundColor(.white)
-                    Spacer()
-                    VStack{
-                        ForEach(singlePlayerVM.gameList.gameWords){ wrd in
-                            Text(wrd.word).background(Color.white)
-                            
-                        }
-                    }
-                    Button(action:{
-                        singlePlayerVM.restartGame()
-                    }){
-                        Text("Fill")
-                            .foregroundColor(.white)
-                    }
-                    .buttonStyle(.bordered)
-                    .background(Color.purple)
-                    
-                    Spacer()
-                    
-                    Button(action:{
-                        
-                    }){
-                        Text("Multiplayer")
-                            .foregroundColor(.white)
-                    }
-                    .buttonStyle(.bordered)
-                    .background(Color.purple)
-                    
-                    Spacer()
-                    
-                    
-                    Text("SINGLE PLAYER")
-                        .foregroundColor(.white)
-                    
-                    HStack{
-                        Spacer()
-                        
-                        Button(action:{
-                            singlePlayerVM.gameSpeed = 9.0
-                            singlePlayerShow.toggle()
-                        }){
-                            Text("Easy")
-                                .foregroundColor(.white)
-                        }
-                        .buttonStyle(.bordered)
-                        .background(Color.purple)
-                        
-                        Spacer()
-                        
-                        Button(action:{
-                            singlePlayerVM.gameSpeed = 6.5
-                            singlePlayerShow.toggle()
-                        }){
-                            Text("Medium")
-                                .foregroundColor(.white)
-                        }
-                        .buttonStyle(.bordered)
-                        .background(Color.purple)
-                        
-                        Spacer()
-                        
-                        Button(action:{
-                            singlePlayerVM.gameSpeed = 4.0
-                            singlePlayerShow.toggle()
-                        }){
-                            Text("Hard")
-                                .foregroundColor(.white)
-                        }
-                        .buttonStyle(.bordered)
-                        .background(Color.purple)
-                        
-                        Spacer()
-                        
-                        
-                    }//_Hstack
-                    
-                    Spacer()
-                }//_VStack
+            ZStack {
+                // Background
+                Color.black.ignoresSafeArea()
                 
+                VStack(spacing: 40) {
+                    // Title
+                    Text("TYPE FIGHTER")
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .shadow(color: .purple, radius: 10)
+                    
+                    // Game modes
+                    VStack(spacing: 20) {
+                        Text("GAME MODES")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding(.top)
+                        
+                        // Single player button
+                        Button(action: {
+                            singlePlayerShow = true
+                        }) {
+                            Text("Single Player")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.purple)
+                                .cornerRadius(12)
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        // Multiplayer button - for future implementation
+                        Button(action: {
+                            // Future multiplayer implementation
+                        }) {
+                            Text("Multiplayer")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.purple.opacity(0.5))
+                                .cornerRadius(12)
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .disabled(true) // Disabled until implemented
+                    }
+                    .padding(.horizontal, 30)
+                    
+                    // Difficulty selection
+                    VStack(spacing: 15) {
+                        Text("DIFFICULTY")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                        
+                        HStack(spacing: 10) {
+                            ForEach(Difficulty.allCases) { difficulty in
+                                Button(action: {
+                                    //First for highlight then vm change
+                                    selectedDifficulty = difficulty
+                                    singlePlayerVM.difficulty = difficulty
+                                }) {
+                                    Text(difficulty.rawValue.capitalized)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            selectedDifficulty == difficulty ?
+                                            Color.purple : Color.purple.opacity(0.3)
+                                        )
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Settings button
+                    Button(action: {
+                        showSettings = true
+                    }) {
+                        Image(systemName: "gear")
+                            .font(.title)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    .sheet(isPresented: $showSettings) {
+                        SettingsView()
+                    }
+                }
+                .padding(.vertical, 50)
             }
-            .background(Color.black)
+            .transition(.opacity)
         }
+    }
+}
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 

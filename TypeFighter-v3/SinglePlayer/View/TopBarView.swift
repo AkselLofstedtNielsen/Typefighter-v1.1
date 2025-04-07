@@ -12,7 +12,7 @@ struct TopBarView: View {
     @State var timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     
     var stringTime : String{
-        return String(format: "%.1f", vm.timePlayed)
+        return String(format: "%.1f", vm.elapsedTime)
     }
     
     var body: some View {
@@ -29,7 +29,7 @@ struct TopBarView: View {
                     .foregroundColor(.purple)
                     .onReceive(timer){ _ in
                         if vm.isTimerRunning{
-                            vm.timePlayed += 0.1
+                            vm.elapsedTime += 0.1
                             vm.addWordToGame()
                         }
                     }
