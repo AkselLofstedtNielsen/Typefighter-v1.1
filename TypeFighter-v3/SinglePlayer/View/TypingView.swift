@@ -8,7 +8,7 @@
 import SwiftUI
 import OSLog
 
-//FIXA !!!om man skriver säg AKSE och sedan backar ur till 0 och sedan börjar skriva ett nytt ord så stannar vi i AKSEL ordet. Fastnar i ord ibland?? HITTA FEL
+
 struct TypingView: View {
     @ObservedObject var singlePlayerVM: SinglePlayerVM
     //@State var finished: Bool = false
