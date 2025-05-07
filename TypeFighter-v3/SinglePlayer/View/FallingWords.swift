@@ -9,15 +9,14 @@ import SwiftUI
 import os
 
 struct FallingWords: View {
-    @ObservedObject var typingVM : SinglePlayerVM
+    @ObservedObject var viewModel : SinglePlayerVM
     @State var isPlaying = true
         
     var body: some View {
         ZStack{
-            if typingVM.gameRunning{
-                ForEach(typingVM.gameList.words){ wrd in
-                   
-                    WordView(typingVM: typingVM, word: wrd)
+            if viewModel.gameRunning{
+                ForEach(viewModel.gameList.words){ wrd in
+                    WordView(viewModel: viewModel, word: wrd)
                 }
                 Rectangle()
                     .frame(height: 10.0)

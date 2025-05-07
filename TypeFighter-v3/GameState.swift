@@ -2,7 +2,7 @@
 //  GameState.swift
 //  TypeFighter-v3
 //
-//  Created by Aksel Nielsen on 2025-04-07.
+//  Created by Aksel Nielsen on 2025-05-07.
 //
 
 enum GameState {

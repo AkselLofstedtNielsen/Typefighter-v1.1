@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 struct WordView : View {
-    @ObservedObject var typingVM : SinglePlayerVM
+    @ObservedObject var viewModel : SinglePlayerVM
     var word : Word
     @State var animate = false
     @State var contains = false
@@ -17,21 +17,21 @@ struct WordView : View {
     
 
     var body: some View{
-        HighlightedText(word.word, matching: typingVM.userText)
+        HighlightedText(word.word, matching: viewModel.userText)
             .offset(x: word.xPos, y: animate ? 200 : word.yPos)
-            .animation(.linear(duration: typingVM.difficulty.fallingDuration), value: animate)
+            .animation(.linear(duration: viewModel.difficulty.fallingDuration), value: animate)
             .onAppear(perform: {
-                print( "falling duration: " + typingVM.difficulty.rawValue)
+                print( "falling duration: " + viewModel.difficulty.rawValue)
                 animate.toggle()
-                DispatchQueue.main.asyncAfter(deadline: .now() + typingVM.difficulty.fallingDuration) {
-                    let contains = typingVM.gameList.words.contains { contain in
+                DispatchQueue.main.asyncAfter(deadline: .now() + viewModel.difficulty.fallingDuration) {
+                    let contains = viewModel.gameList.words.contains { contain in
                         return contain.word == word.word
                     }
                     if contains{
                         word.dead.toggle()
-                        typingVM.gameList.words.removeAll(where: {$0.id == word.id})
-                        typingVM.playerLife -= 1
-                        typingVM.checkDead()
+                        viewModel.gameList.words.removeAll(where: {$0.id == word.id})
+                        viewModel.playerLife -= 1
+                        viewModel.checkDead()
                     }
                 }
             })

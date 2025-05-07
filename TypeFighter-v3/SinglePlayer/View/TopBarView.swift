@@ -30,7 +30,6 @@ struct TopBarView: View {
                     .onReceive(timer){ _ in
                         if vm.isTimerRunning{
                             vm.elapsedTime += 0.1
-                            vm.addWordToGame()
                         }
                     }
             }

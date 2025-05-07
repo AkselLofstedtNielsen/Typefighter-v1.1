@@ -1,153 +1,132 @@
-//
-//  SinglePlayerVM.swift
-//  TypeFighter-v3
-//
-//  Created by Aksel Nielsen on 2025-03-24.
-//
-
 import Foundation
-import OSLog
 
-class SinglePlayerVM : ObservableObject {
 
-    //Game state
+class SinglePlayerVM: ObservableObject {
+    // Engine and state machine
+    private let gameEngine: GameEngine
+    private let stateMachine: GameStateMachine
+    
+    // Published properties for UI binding
     @Published var gameState: GameState = .notStarted
-    //TODO implement gamestate
-    @Published var playerLife : Int = 3
-    @Published var elapsedTime = 0.0
-    @Published var score = 0
-    @Published var wordsPerMinute = 0.0
+    @Published var playerLife: Int = 3
+    @Published var elapsedTime: Double = 0.0
+    @Published var score: Int = 0
+    @Published var wordsPerMinute: Double = 0.0
+    @Published var gameList: WordListSinglePlayer
+    //Nånting skumt med ord spawningen, allt ser ut att fungera men jag tror att gamelist.words inte fylls korrekt från gamelist.gamewords eller liknande
+    @Published var userText: String = ""
+    @Published var gameWon: Bool = false
+    @Published var gameLost: Bool = false
+    @Published var gameRunning: Bool = false
+    @Published var isTimerRunning: Bool = false
+    @Published var difficulty: Difficulty = .easy {
+        didSet {
+            gameEngine.difficulty = difficulty
+        }
+    }
     
-    //Word tracking
-    @Published var words: [Word] = []
-    @Published var activeWordId: UUID?
-    @Published var currentUserInput = ""
+    init() {
+        // Initialize all stored properties first
+        let initialGameList = WordListSinglePlayer()
+        initialGameList.fillList()
+        self.gameList = initialGameList
+        
+        // Create word generator with the local variable
+        let wordGenerator = WordListGenerator(wordList: initialGameList)
+        
+        // Create game engine with local variable
+        let initialDifficulty: Difficulty = .easy
+        self.gameEngine = GameEngine(difficulty: initialDifficulty, wordGenerating: wordGenerator)
+        
+        // Create state machine with engine
+        self.stateMachine = GameStateMachine(gameEngine: self.gameEngine)
+        
+        // Now all stored properties are initialized, we can set up callbacks
+        setupStateMachineCallbacks()
+        
+        // Set up publisher subscriptions
+        setupSubscriptions()
+    }
     
-    //Settings
-    @Published var difficulty: Difficulty = .easy
-    
-    //Private props
-    @Published var gameList = WordListSinglePlayer()
-    @Published var isTimerRunning = false
-    @Published var gameRunning = false
-    
-    @Published var userText = ""
-    @Published var wordFound = false
-    @Published var id = UUID()
-    @Published var letterPosition = 1
-    
-    
-    @Published var gameWon = false
-    @Published var gameLost = false
-    
-    
-    func handleBackspace(){
-        print("HandleBackspace")
-        //Setting Option? if u want to clear all or regular backspace when pressed
-        //What should backspace do in singlelayer? maybe move to common VM?
-        if !userText.isEmpty{
-            userText.removeAll()
+    private func setupStateMachineCallbacks() {
+        stateMachine.onGameStart = { [weak self] in
+            self?.gameRunning = true
+            self?.isTimerRunning = true
         }
         
+        stateMachine.onGamePause = { [weak self] in
+            self?.isTimerRunning = false
+        }
         
+        stateMachine.onGameResume = { [weak self] in
+            self?.isTimerRunning = true
+        }
+        
+        stateMachine.onGameWin = { [weak self] in
+            self?.gameWon = true
+            self?.gameRunning = false
+        }
+        
+        stateMachine.onGameLose = { [weak self] in
+            self?.gameLost = true
+            self?.gameRunning = false
+        }
+        
+        stateMachine.onStateChange = { [weak self] state in
+            self?.gameState = state
+        }
     }
+    
+    private func setupSubscriptions() {
+        // Combine api??
+    }
+    
+    // MARK: - Public methods (API)
+    
     func testing(letter: Character) {
-        if wordFound{
-            guard let index = gameList.words.firstIndex(where: {$0.id == id}) else { return }
-            
-            print("i ord: \(gameList.words[index].word)")
-            
-            let wordInLetters = gameList.words[index].letters
-            
-            if wordInLetters[letterPosition] == letter{
-                if letterPosition == wordInLetters.count - 1{
-                    print("Ord skrivet")
-                    resetWord()
-                    gameList.words.remove(at: index)
-                    
-                    if gameList.gameWords.isEmpty && gameList.words.isEmpty{
-                    
-                        gameWon = true
-                        stopGame()
-  
-                    }
-                    
-                }else{
-                    print("Rätt")
-                    letterPosition += 1
-                }
-                
-            }else{
-                print("Fel")
-            }
-            
-        }
-        if !wordFound{
-            for word in gameList.words{
-                if word.letter == letter{
-                    print("Ja")
-                    id = word.id
-                    wordFound = true
-                    break
-                }else{
-                    print("Nej")
-                }
-            }
-        }
         
-      }
-    func addWordToGame(){
-        let check: Double = elapsedTime .truncatingRemainder(dividingBy: 2.0)
-        let checkRounded = check.roundToDecimal(1)
-        if  checkRounded == 0.1{
-            gameList.addRandomWordToGame()
+        let result = gameEngine.processUserInput(letter: letter)
+        
+        // Update UI based on result
+        switch result {
+        case .noMatch:
+            // Handle no match case
+            break
+            
+        case .partialMatch(let wordId, let progress):
+            // Update UI to show partial match
+            userText = gameEngine.currentTypedWord
+            
+        case .completeMatch(let wordId, let score):
+            // Handle completed word
+            userText = ""
+            
+            // Check if game is won or lost
+            stateMachine.checkGameStatus()
         }
     }
     
-      func resetWord() {
-          letterPosition = 1
-          userText = ""
-          wordFound = false
-      }
-      
-      func stopGame() {
-          elapsedTime = 0
-          isTimerRunning = false
-          gameRunning = false
-      }
-      
-      func restartGame() {
-          
-          gameWon = false
-          gameLost = false
-          gameList.fillList()
+    func handleBackspace() {
 
-          gameList.setStartingPositions()
-          gameRunning = true
-          isTimerRunning = true
-          elapsedTime = 0.0
-          playerLife = 3
-      }
-    func checkDead(){
-        if playerLife == 0{
-            gameList.clearAll()
-            stopGame()
-            gameLost = true
-            
-        }
-        
+        gameEngine.handleBackspace()
+        userText = gameEngine.currentTypedWord
     }
     
+    func resetWord() {
+        userText = ""
+    }
     
-  }
-
-
-
-
-   
-
-
-
-
-
-
+    func restartGame() {
+        gameWon = false
+        gameLost = false
+        stateMachine.startGame()
+    }
+    
+    func addWordToGame() {
+        // This is now handled internally by the game engine
+    }
+    
+    func checkDead() {
+        stateMachine.checkGameStatus()
+    }
+}
