@@ -8,18 +8,18 @@
 import SwiftUI
 
 struct TopBarView: View {
-    @ObservedObject var vm: SinglePlayerVM
+    @ObservedObject var viewModel: SinglePlayerVM
     @State var timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     
     var stringTime : String{
-        return String(format: "%.1f", vm.elapsedTime)
+        return String(format: "%.1f", viewModel.elapsedTime)
     }
     
     var body: some View {
         HStack{
            
-            if vm.gameRunning{
-                ForEach(0..<vm.playerLife, id: \.self){_ in
+            if viewModel.gameRunning{
+                ForEach(0..<viewModel.playerLife, id: \.self){_ in
                     Image(systemName: "heart")
                         .foregroundColor(.purple)
                 }
@@ -28,8 +28,8 @@ struct TopBarView: View {
                     .bold()
                     .foregroundColor(.purple)
                     .onReceive(timer){ _ in
-                        if vm.isTimerRunning{
-                            vm.elapsedTime += 0.1
+                        if viewModel.isTimerRunning{
+                            viewModel.elapsedTime += 0.1
                         }
                     }
             }

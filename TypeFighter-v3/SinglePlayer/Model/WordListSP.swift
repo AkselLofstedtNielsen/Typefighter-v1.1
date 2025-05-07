@@ -19,8 +19,8 @@ class WordListSinglePlayer: ObservableObject{
         //fill from local if empty check db somehow
         if gameWords.isEmpty{
             if localDBWords.isEmpty{
-                //Fill from DB
-                //For now
+                // Fill default word list if nothing is saved
+                print("Adding default words to local DB")
                 addWordToLocalDB("FLICKA")
                 addWordToLocalDB("SKYMTA")
                 addWordToLocalDB("GRILLA")
@@ -43,25 +43,37 @@ class WordListSinglePlayer: ObservableObject{
                 addWordToLocalDB("STÄLLA")
             }
             
+            print("Creating game words from local DB. Count: \(localDBWords.count)")
             for word in localDBWords{
-                gameWords.append(Word(word: word, xPos: 0, yPos: 0))
+                let newWord = Word(word: word, xPos: 0, yPos: 0)
+                gameWords.append(newWord)
             }
             
+            print("Game words after filling: \(gameWords.count)")
+            setStartingPositions()
         }
     }
+    
     func addWordToLocalDB(_ word: String){
         if !localDBWords.contains(word){
             localDBWords.append(word.uppercased())
         }
     }
+    
     func addRandomWordToGame(){
-        guard let word = gameWords.randomElement() else {return}
+        guard let word = gameWords.randomElement() else {
+            print("No words available to add to game")
+            return
+        }
         
         let id = word.id
         addToWords(word: word)
-        gameWords.removeAll(where: {$0.id == id})
+        print("Added random word to game: \(word.word)")
         
+        // Don't remove from gameWords - this could be causing the issue
+        // gameWords.removeAll(where: {$0.id == id})
     }
+    
     func setStartingPositions(){
         let xPositions : [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70,90,130]
         for word in gameWords{
@@ -69,12 +81,24 @@ class WordListSinglePlayer: ObservableObject{
             word.yPos = -400
         }
     }
+    
     func addToWords(word: Word){
-        words.append(word)
+        // Create a new word instance to avoid reference issues
+        let newWord = Word(word: word.word, xPos: word.xPos, yPos: word.yPos)
+        words.append(newWord)
+        print("Added word to active words: \(newWord.word)")
     }
+    
     func clearAll(){
+        print("Clearing all words")
         words.removeAll()
         gameWords.removeAll()
     }
     
+    // Debug function
+    func printWordStatus() {
+        print("=== WordList Status ===")
+        print("Active words: \(words.count)")
+        print("Game words pool: \(gameWords.count)")
+    }
 }

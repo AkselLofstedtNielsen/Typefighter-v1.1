@@ -1,4 +1,3 @@
-
 //
 //  WordGenerating.swift
 //  TypeFighter-v3
@@ -17,27 +16,35 @@ protocol WordGenerating {
 // Implementation for the existing WordListSinglePlayer
 class WordListGenerator: WordGenerating {
     private let wordList: WordListSinglePlayer
+    private var usedWords: Set<UUID> = []
     
     init(wordList: WordListSinglePlayer) {
         self.wordList = wordList
         // Make sure we have words loaded
         wordList.fillList()
+        print("WordListGenerator initialized with \(wordList.gameWords.count) words")
     }
     
     func getNextWord() -> String {
         // If we have a random word from the list, return it
         if let randomWord = wordList.gameWords.randomElement() {
-            // Remove it from the available pool
-            wordList.gameWords.removeAll(where: { $0.id == randomWord.id })
+            // Track this word as used
+            usedWords.insert(randomWord.id)
+            
+            // Keep it in gameWords but mark as used
+            // This prevents removing from the source array which could be causing issues
+            print("Returning word: \(randomWord.word)")
             return randomWord.word
         }
         
+        print("No words available, returning fallback")
         // Fallback to a default word if none available
         return "FALLBACK"
     }
     
     func isPoolEmpty() -> Bool {
-        return wordList.gameWords.isEmpty && wordList.words.isEmpty
+        // Check if all words have been used
+        return usedWords.count >= wordList.gameWords.count
     }
 }
 

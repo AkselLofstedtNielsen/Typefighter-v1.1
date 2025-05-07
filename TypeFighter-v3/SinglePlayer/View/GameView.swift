@@ -27,7 +27,7 @@ struct GameView: View {
             
             
             VStack(spacing: 0){
-                TopBarView(vm: vm)
+                TopBarView(viewModel: vm)
                     .padding(.horizontal)
                     .padding(.top, 10)
                     .background(

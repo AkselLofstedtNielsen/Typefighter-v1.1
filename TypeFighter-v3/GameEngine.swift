@@ -8,6 +8,11 @@
 import Foundation
 import SwiftUI
 
+//PROBLEM
+//- Liv blir inte borttagna vid miss.
+//- Verkar som ord slutar falla om man slutar skriva ett tag? timern? eller word som slutar läsas om kanske
+//
+
 // Enum for word matching results
 enum WordMatchResult {
     case noMatch
@@ -46,6 +51,9 @@ class GameEngine: ObservableObject {
     func startGame() {
         resetGameState()
         startTimers()
+        // Spawn initial word to get things going
+        spawnWord()
+        lastSpawnTime = 0.0
     }
     
     func stopGame() {
@@ -102,32 +110,28 @@ class GameEngine: ObservableObject {
             lastSpawnTime = elapsedTime
         }
         
-        // Update word positions
-        updateWordPositions()
+        // Update word positions - this is now handled by animation in WordView
     }
     
     // Word spawning and management
     func spawnWord() {
         let newWord = wordGenerating.getNextWord()
+        if newWord == "FALLBACK" || newWord.isEmpty {
+            print("Word pool is empty or returning fallback")
+            return
+        }
+        
         let xPositions: [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70, 90, 130]
         
         if let xPos = xPositions.randomElement() {
             let word = Word(word: newWord, xPos: xPos, yPos: -400)
+            print("Spawning new word: \(newWord) at position \(xPos)")
             words.append(word)
         }
     }
     
-    private func updateWordPositions() {
-        for word in words {
-            // Check if word has reached the bottom line
-            if word.yPos >= 200 {
-                removeWord(word.id)
-                decrementLives()
-            }
-        }
-    }
-    
-    private func removeWord(_ id: UUID) {
+    func removeWord(_ id: UUID) {
+        print("Removing word with ID: \(id)")
         words.removeAll { $0.id == id }
         if activeWordId == id {
             resetWordTyping()
@@ -205,7 +209,7 @@ class GameEngine: ObservableObject {
         let baseScore = word.word.count * 10
         
         // Bonus for speed (inversely proportional to time taken to type)
-        let speedBonus = Int(20.0 / (elapsedTime - lastSpawnTime))
+        //let speedBonus = Int(20.0 / (elapsedTime - lastSpawnTime))
         
         // Difficulty multiplier
         let difficultyMultiplier: Int
@@ -217,8 +221,8 @@ class GameEngine: ObservableObject {
         case .hard:
             difficultyMultiplier = 3
         }
-        
-        return (baseScore + speedBonus) * difficultyMultiplier
+        //Add speedbonus somehow?
+        return (baseScore) * difficultyMultiplier
     }
     
     func decrementLives() {

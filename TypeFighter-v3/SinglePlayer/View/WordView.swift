@@ -14,21 +14,27 @@ struct WordView : View {
     @State var animate = false
     @State var contains = false
 
-    
-
     var body: some View{
         HighlightedText(word.word, matching: viewModel.userText)
             .offset(x: word.xPos, y: animate ? 200 : word.yPos)
             .animation(.linear(duration: viewModel.difficulty.fallingDuration), value: animate)
             .onAppear(perform: {
-                print( "falling duration: " + viewModel.difficulty.rawValue)
-                animate.toggle()
+                print("Word appearing: \(word.word), falling duration: \(viewModel.difficulty.fallingDuration)")
+                
+                // Start the animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    animate = true
+                }
+                
+                // Check if word reaches bottom
                 DispatchQueue.main.asyncAfter(deadline: .now() + viewModel.difficulty.fallingDuration) {
                     let contains = viewModel.gameList.words.contains { contain in
-                        return contain.word == word.word
+                        return contain.id == word.id
                     }
-                    if contains{
-                        word.dead.toggle()
+                    
+                    if contains {
+                        print("Word \(word.word) reached bottom")
+                        word.dead = true
                         viewModel.gameList.words.removeAll(where: {$0.id == word.id})
                         viewModel.playerLife -= 1
                         viewModel.checkDead()
@@ -37,11 +43,5 @@ struct WordView : View {
             })
             .foregroundColor(.white)
             .font(.system(size:24, weight: .bold, design: .rounded))
-        
-
-            
-            
-        
-
     }
 }
