@@ -11,7 +11,7 @@ import SwiftUI
 //PROBLEM
 //- Liv blir inte borttagna vid miss.
 //- Verkar som ord slutar falla om man slutar skriva ett tag? timern? eller word som slutar läsas om kanske
-//
+//- userinput fixat. Men ordet försvinner inte förens nästa tangent trycks. Titta över.
 
 // Enum for word matching results
 enum WordMatchResult {
@@ -197,7 +197,7 @@ class GameEngine: ObservableObject {
         }
     }
     
-    private func resetWordTyping() {
+    func resetWordTyping() {
         activeWordId = nil
         letterPosition = 0
         currentTypedWord = ""

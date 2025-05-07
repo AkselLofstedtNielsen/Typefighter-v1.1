@@ -21,7 +21,14 @@ struct CustomTextField: UIViewRepresentable {
     
     //Updates textField when swift needs to refresh the view, makes sure textfield displays correct value
     func updateUIView(_ uiView: UITextField, context: UIViewRepresentableContext<CustomTextField>) {
-        uiView.text = text
+        // Only update if different to avoid cycle
+        if uiView.text != text {
+            uiView.text = text
+            // Place cursor at end of text for better typing experience
+            if let newPosition = uiView.position(from: uiView.beginningOfDocument, offset: text.count) {
+                uiView.selectedTextRange = uiView.textRange(from: newPosition, to: newPosition)
+            }
+        }
     }
     
     //Creates coordinator obj that handles communication between uikid and swiftui, because uitextfield uses delegate pattern that swiftui doesnt support
@@ -29,15 +36,22 @@ struct CustomTextField: UIViewRepresentable {
         Coordinator(self)
     }
     
-    //Magic=== Detects when user press backspace(empty string with range length > 0). Detects normal char input. Calls custom handlers. Manually updates swiftui bindings. 
+    //Magic=== Detects when user press backspace(empty string with range length > 0). Detects normal char input. Calls custom handlers. Manually updates swiftui bindings.
     class Coordinator: NSObject, UITextFieldDelegate {
         var parent: CustomTextField
+        // Track if we're currently updating from external source
+        var isExternalUpdate = false
         
         init(_ parent: CustomTextField) {
             self.parent = parent
         }
         
         func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+            // Check if this is an external update
+            if isExternalUpdate {
+                return true
+            }
+            
             // Handle backspace
             if string.isEmpty && range.length > 0 {
                 parent.onBackspace()
@@ -47,28 +61,20 @@ struct CustomTextField: UIViewRepresentable {
             // Handle normal character input
             if !string.isEmpty {
                 parent.onKeyPress(string)
+                return false // Handled by the onKeyPress callback
             }
             
-            // Update the binding directly for better control
-            if let currentText = textField.text {
-                let updatedText: String
-                if string.isEmpty {
-                    // Backspace: remove the character at the range
-                    let textRange = Range(range, in: currentText)!
-                    updatedText = currentText.replacingCharacters(in: textRange, with: "")
-                } else {
-                    // Insert the new character
-                    let textRange = Range(range, in: currentText)!
-                    updatedText = currentText.replacingCharacters(in: textRange, with: string)
-                }
-                
-                // Update the binding
+            return true
+        }
+        
+        // Add this method to handle text clearing more explicitly
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            // Make sure the binding matches the field, but only update if needed
+            if let text = textField.text, text != parent.text {
                 DispatchQueue.main.async {
-                    self.parent.text = updatedText
+                    self.parent.text = text
                 }
             }
-            
-            return false // We handle the text update manually above
         }
     }
 }
