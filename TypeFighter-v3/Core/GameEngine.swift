@@ -109,8 +109,6 @@ class GameEngine: ObservableObject {
             spawnWord()
             lastSpawnTime = elapsedTime
         }
-        
-        // Update word positions - this is now handled by animation in WordView
     }
     
     // Word spawning and management
@@ -180,13 +178,23 @@ class GameEngine: ObservableObject {
             
             // Check if the word is complete
             if letterPosition == letters.count {
-                // Word is complete
+                // Word is complete - IMMEDIATELY remove it from the words array
                 let wordScore = calculateScore(word: word)
+                // Save the ID before removal
+                let completedWordId = wordId
+                
+                // Remove word immediately
                 removeWord(wordId)
+                
+                // Update stats
                 wordsCompleted += 1
                 score += wordScore
+                
+                // Reset typing state
                 resetWordTyping()
-                return .completeMatch(wordId: wordId, score: wordScore)
+                
+                // Return completion result
+                return .completeMatch(wordId: completedWordId, score: wordScore)
             }
             
             return .partialMatch(wordId: wordId, progress: progress)
@@ -196,7 +204,6 @@ class GameEngine: ObservableObject {
             return .noMatch
         }
     }
-    
     func resetWordTyping() {
         activeWordId = nil
         letterPosition = 0

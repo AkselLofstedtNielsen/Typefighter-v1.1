@@ -95,50 +95,54 @@ class SinglePlayerVM: ObservableObject {
     }
     
     private func setupSubscriptions() {
-        // We'll use a simple approach for now instead of Combine
+        // Maybe Combine later
     }
     
-    // Sync the game engine's words with our gameList.words for display
+    // Sync the game engine's words with gameList.words for display
     private func syncGameEngineWithGameList() {
-        // Clear current visible words
+        // Replace the entire words array from the engine
         gameList.words = gameEngine.words
+        
+        // Force UI refresh
+        objectWillChange.send()
         
         // Log the sync operation
         print("Synced game engine words (\(gameEngine.words.count)) with gameList")
     }
-    
-    // MARK: - Public methods (API)
-    
-    // Update this method in SinglePlayerVM.swift
+        
     func testing(letter: Character) {
         let result = gameEngine.processUserInput(letter: letter)
         
         // Update UI based on result
         switch result {
         case .noMatch:
-            // Handle no match case
+            // Handle no match case - leave text as is
             break
             
         case .partialMatch(_, _):
             // Update UI to show partial match
             userText = gameEngine.currentTypedWord
             
-        case .completeMatch(_, _):
-            // Handle completed word - explicitly clear the text field with a slight delay
-            // This ensures that any pending text field updates are processed first
-            DispatchQueue.main.async {
-                self.userText = ""
-                self.gameEngine.resetWordTyping() // Make sure engine state is also reset
-                
-                // Check if game is won or lost
-                self.stateMachine.checkGameStatus()
-            }
-            return // Exit early to avoid running the code below for complete matches
+        case .completeMatch(wordId: let wordId, score: _):
+            // Word completed - clear text field immediately
+            userText = ""
+            
+            // Make sure the UI is updated to remove the word immediately
+            syncGameEngineWithGameList()
+            
+            // Force UI refresh
+            objectWillChange.send()
+            
+            // Check if game is won or lost
+            stateMachine.checkGameStatus()
+            
+            return // Exit early
         }
         
-        // Sync the game list with the engine state for non-complete matches
+        // Sync game engine with game list for non-complete matches
         syncGameEngineWithGameList()
     }
+
     
     func handleBackspace() {
         gameEngine.handleBackspace()
