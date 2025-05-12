@@ -1,24 +1,29 @@
-
-//  FallingWordsController
-//  TypeFighter-v3
-//
-//  Created by Aksel Nielsen on 2025-05-08.
-//
-
 import Foundation
 import SwiftUI
+
+/// Represents the falling state of a word
+struct WordFallingState: Equatable {
+    var isFalling: Bool
+    var timer: Double
+    
+    // Explicitly conform to Equatable
+    static func == (lhs: WordFallingState, rhs: WordFallingState) -> Bool {
+        return lhs.isFalling == rhs.isFalling &&
+               abs(lhs.timer - rhs.timer) < 0.1 // Allow small floating point differences
+    }
+    
+}
 
 /// Controls the falling behavior of words to ensure consistent animation
 class FallingWordsController: ObservableObject {
     // Reference to game engine
-    //using weak to avoid memory leaks
     private weak var gameEngine: GameEngine?
     
     // Animation update timer
     private var animationTimer: Timer?
     
-    // Animation states for words
-    @Published var wordAnimationStates: [UUID: Bool] = [:]
+    // Animation states for words with individual timers
+    @Published var wordAnimationStates: [UUID: WordFallingState] = [:]
     
     // Word tracking
     private var activeFallingWords: Set<UUID> = []
@@ -58,10 +63,10 @@ class FallingWordsController: ObservableObject {
         if !activeFallingWords.contains(word.id) {
             activeFallingWords.insert(word.id)
             
-            // Initial state is not falling
-            wordAnimationStates[word.id] = false
+            // Initial state is not falling, with zero timer
+            wordAnimationStates[word.id] = WordFallingState(isFalling: false, timer: 0)
             
-            // Schedule animation to start immediately
+            // Schedule animation to start with a small random delay
             DispatchQueue.main.async { [weak self] in
                 self?.startFallingAnimation(for: word.id)
             }
@@ -76,20 +81,27 @@ class FallingWordsController: ObservableObject {
     
     /// Start the falling animation for a specific word
     func startFallingAnimation(for wordId: UUID) {
-        wordAnimationStates[wordId] = true
+        // Randomize start time slightly to create more natural falling
+        let randomDelay = Double.random(in: 0...0.5)
+        wordAnimationStates[wordId] = WordFallingState(isFalling: true, timer: randomDelay)
         objectWillChange.send()
     }
     
     /// Get animation state for a word
     func isWordFalling(_ wordId: UUID) -> Bool {
-        return wordAnimationStates[wordId] ?? false
+        return wordAnimationStates[wordId]?.isFalling ?? false
+    }
+    
+    /// Get animation timer for a word
+    func getWordAnimationTimer(_ wordId: UUID) -> Double {
+        return wordAnimationStates[wordId]?.timer ?? 0
     }
     
     /// Start the animation timer
     private func startAnimationTimer() {
         animationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
-            self.checkAndUpdateAnimations()
+            self.updateWordAnimations()
         }
     }
     
@@ -99,8 +111,8 @@ class FallingWordsController: ObservableObject {
         animationTimer = nil
     }
     
-    /// Check and update animations if needed
-    private func checkAndUpdateAnimations() {
+    /// Update animations for individual words
+    private func updateWordAnimations() {
         guard let engine = gameEngine, !engine.words.isEmpty else { return }
         
         // Ensure all words in the game engine are registered
@@ -109,9 +121,10 @@ class FallingWordsController: ObservableObject {
                 registerWord(word)
             }
             
-            // If a word isn't falling yet, make it fall
-            if wordAnimationStates[word.id] == false {
-                startFallingAnimation(for: word.id)
+            // Update animation timer for falling words
+            if var animState = wordAnimationStates[word.id], animState.isFalling {
+                animState.timer += 0.1
+                wordAnimationStates[word.id] = animState
             }
         }
         
