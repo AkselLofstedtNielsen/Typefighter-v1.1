@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 
-/// Represents the falling state of a word
 struct WordFallingState: Equatable {
     var isFalling: Bool
     var timer: Double
@@ -14,7 +13,6 @@ struct WordFallingState: Equatable {
     
 }
 
-/// Controls the falling behavior of words to ensure consistent animation
 class FallingWordsController: ObservableObject {
     // Reference to game engine
     private weak var gameEngine: GameEngine?
@@ -32,32 +30,27 @@ class FallingWordsController: ObservableObject {
         self.gameEngine = gameEngine
     }
     
-    /// Set the game engine reference
     func setGameEngine(_ engine: GameEngine) {
         self.gameEngine = engine
     }
     
-    /// Start the animation controller
     func start() {
         stopAnimationTimer()
         startAnimationTimer()
     }
     
-    /// Stop the animation controller
     func stop() {
         stopAnimationTimer()
         wordAnimationStates.removeAll()
         activeFallingWords.removeAll()
     }
     
-    /// Reset the controller state
     func reset() {
         stop()
         wordAnimationStates.removeAll()
         activeFallingWords.removeAll()
     }
     
-    /// Add a word to be managed by the controller
     func registerWord(_ word: Word) {
         // Only add if not already tracked
         if !activeFallingWords.contains(word.id) {
@@ -79,7 +72,6 @@ class FallingWordsController: ObservableObject {
         wordAnimationStates.removeValue(forKey: wordId)
     }
     
-    /// Start the falling animation for a specific word
     func startFallingAnimation(for wordId: UUID) {
         // Randomize start time slightly to create more natural falling
         let randomDelay = Double.random(in: 0...0.5)
@@ -87,17 +79,14 @@ class FallingWordsController: ObservableObject {
         objectWillChange.send()
     }
     
-    /// Get animation state for a word
     func isWordFalling(_ wordId: UUID) -> Bool {
         return wordAnimationStates[wordId]?.isFalling ?? false
     }
     
-    /// Get animation timer for a word
     func getWordAnimationTimer(_ wordId: UUID) -> Double {
         return wordAnimationStates[wordId]?.timer ?? 0
     }
     
-    /// Start the animation timer
     private func startAnimationTimer() {
         animationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -105,13 +94,11 @@ class FallingWordsController: ObservableObject {
         }
     }
     
-    /// Stop the animation timer
     private func stopAnimationTimer() {
         animationTimer?.invalidate()
         animationTimer = nil
     }
     
-    /// Update animations for individual words
     private func updateWordAnimations() {
         guard let engine = gameEngine, !engine.words.isEmpty else { return }
         

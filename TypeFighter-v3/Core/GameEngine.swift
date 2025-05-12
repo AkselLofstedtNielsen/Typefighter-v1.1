@@ -79,7 +79,6 @@ class GameEngine: ObservableObject {
     
     // Timer functions
     private func startTimers() {
-        // Stop existing timers first
         stopTimers()
         
         // Start game time update timer
@@ -111,8 +110,6 @@ class GameEngine: ObservableObject {
             let minutesElapsed = elapsedTime / 60.0
             wordsPerMinute = (Double(wordsCompleted) / minutesElapsed).roundToDecimal(1)
         }
-        
-        // We no longer check for spawning here as we have a dedicated timer for it
     }
     
     // Word spawning and management
