@@ -2,16 +2,11 @@
 //  GameEngine.swift
 //  TypeFighter-v3
 //
-//  Created by Aksel Nielsen on 2025-04-15.
+//  Updated on 2025-05-08.
 //
 
 import Foundation
 import SwiftUI
-
-//PROBLEM
-//- Liv blir inte borttagna vid miss.
-//- Verkar som ord slutar falla om man slutar skriva ett tag? timern? eller word som slutar läsas om kanske
-//- userinput fixat. Men ordet försvinner inte förens nästa tangent trycks. Titta över.
 
 // Enum for word matching results
 enum WordMatchResult {
@@ -41,6 +36,7 @@ class GameEngine: ObservableObject {
     
     // Active timers
     private var gameTimer: Timer?
+    private var wordSpawnTimer: Timer? // Separate timer for word spawning
     
     init(difficulty: Difficulty, wordGenerating: WordGenerating) {
         self.difficulty = difficulty
@@ -83,16 +79,28 @@ class GameEngine: ObservableObject {
     
     // Timer functions
     private func startTimers() {
-        gameTimer?.invalidate()
+        // Stop existing timers first
+        stopTimers()
+        
+        // Start game time update timer
         gameTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.updateGameTime()
+        }
+        
+        // Start separate word spawn timer to ensure consistent spawning
+        wordSpawnTimer = Timer.scheduledTimer(withTimeInterval: difficulty.spawnInterval, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.spawnWord()
         }
     }
     
     private func stopTimers() {
         gameTimer?.invalidate()
         gameTimer = nil
+        
+        wordSpawnTimer?.invalidate()
+        wordSpawnTimer = nil
     }
     
     private func updateGameTime() {
@@ -104,11 +112,7 @@ class GameEngine: ObservableObject {
             wordsPerMinute = (Double(wordsCompleted) / minutesElapsed).roundToDecimal(1)
         }
         
-        // Check if it's time to spawn a new word
-        if elapsedTime - lastSpawnTime >= difficulty.spawnInterval {
-            spawnWord()
-            lastSpawnTime = elapsedTime
-        }
+        // We no longer check for spawning here as we have a dedicated timer for it
     }
     
     // Word spawning and management
@@ -125,6 +129,10 @@ class GameEngine: ObservableObject {
             let word = Word(word: newWord, xPos: xPos, yPos: -400)
             print("Spawning new word: \(newWord) at position \(xPos)")
             words.append(word)
+            lastSpawnTime = elapsedTime
+            
+            // Notify observers of change
+            objectWillChange.send()
         }
     }
     
@@ -134,6 +142,8 @@ class GameEngine: ObservableObject {
         if activeWordId == id {
             resetWordTyping()
         }
+        // Notify observers of change
+        objectWillChange.send()
     }
     
     // Input processing
@@ -204,6 +214,7 @@ class GameEngine: ObservableObject {
             return .noMatch
         }
     }
+    
     func resetWordTyping() {
         activeWordId = nil
         letterPosition = 0
@@ -215,9 +226,6 @@ class GameEngine: ObservableObject {
         // Base score based on word length
         let baseScore = word.word.count * 10
         
-        // Bonus for speed (inversely proportional to time taken to type)
-        //let speedBonus = Int(20.0 / (elapsedTime - lastSpawnTime))
-        
         // Difficulty multiplier
         let difficultyMultiplier: Int
         switch difficulty {
@@ -228,12 +236,13 @@ class GameEngine: ObservableObject {
         case .hard:
             difficultyMultiplier = 3
         }
-        //Add speedbonus somehow?
+        
         return (baseScore) * difficultyMultiplier
     }
     
     func decrementLives() {
         lives -= 1
+        objectWillChange.send()
     }
     
     // Game status checks

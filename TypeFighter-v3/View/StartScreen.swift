@@ -128,4 +128,3 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
-

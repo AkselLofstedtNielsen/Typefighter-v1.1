@@ -1,6 +1,5 @@
 import Foundation
 
-
 class SinglePlayerVM: ObservableObject {
     // Engine and state machine
     private let gameEngine: GameEngine
@@ -49,6 +48,11 @@ class SinglePlayerVM: ObservableObject {
         
         // Log initialization
         print("SinglePlayerVM initialized with \(gameList.gameWords.count) words in the pool")
+    }
+    
+    // Expose game engine to the falling words controller
+    func getGameEngine() -> GameEngine {
+        return gameEngine
     }
     
     private func setupStateMachineCallbacks() {

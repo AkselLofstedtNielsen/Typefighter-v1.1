@@ -12,6 +12,7 @@ struct ContentView: View {
     @ObservedObject var singlePlayerVM = SinglePlayerVM()
     @State var singlePlayerShow: Bool = true
     
+    
     var body: some View {
         ZStack{
             StartScreenView()
