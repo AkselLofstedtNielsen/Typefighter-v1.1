@@ -7,6 +7,7 @@
 
 
 import Foundation
+import UIKit
 
 class WordListSinglePlayer: ObservableObject{
     @Published var words : [Word] = []
@@ -75,12 +76,15 @@ class WordListSinglePlayer: ObservableObject{
     }
     
     func setStartingPositions(){
-        let xPositions : [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70,90,130]
-        for word in gameWords{
-            word.xPos = xPositions.randomElement()!
-            word.yPos = -400
+            let xPositions : [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70,90,130]
+            let screenHeight = UIScreen.main.bounds.height
+            let startYPos = -screenHeight * 0.1 // Position slightly above the visible area
+            
+            for word in gameWords{
+                word.xPos = xPositions.randomElement()!
+                word.yPos = startYPos
+            }
         }
-    }
     
     func addToWords(word: Word){
         // Create a new word instance to avoid reference issues

@@ -28,37 +28,50 @@ struct WordView : View {
     }
     
     private func calculateYPosition() -> CGFloat {
-        guard let animState = fallingController.wordAnimationStates[word.id] else {
+            guard let animState = fallingController.wordAnimationStates[word.id] else {
+                return word.yPos
+            }
+            
+            if animState.isFalling {
+                // Calculate new Y position based on animation timer and screen height
+                let screenHeight = UIScreen.main.bounds.height
+                let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
+                let totalDistance = screenHeight * 0.5 // 50% of screen height for falling distance
+                return word.yPos + CGFloat(progress * Double(totalDistance))
+            }
+            
             return word.yPos
         }
-        
-        if animState.isFalling {
-            // Calculate new Y position based on animation timer
-            let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
-            return CGFloat(progress * 200) // Assuming 200 is the bottom of the screen
-        }
-        
-        return word.yPos
-    }
     
     private func checkWordFall() {
-        guard let animState = fallingController.wordAnimationStates[word.id],
-              animState.isFalling,
-              animState.timer >= viewModel.difficulty.fallingDuration else {
-            return
-        }
-        
-        let contains = viewModel.gameList.words.contains { $0.id == word.id }
-        
-        if contains {
-            print("Word \(word.word) reached bottom")
-            word.dead = true
-            viewModel.gameList.words.removeAll(where: {$0.id == word.id})
-            viewModel.playerLife -= 1
-            viewModel.checkDead()
+            guard let animState = fallingController.wordAnimationStates[word.id],
+                  animState.isFalling else {
+                return
+            }
             
-            // Unregister the word from the falling controller
-            fallingController.unregisterWord(word.id)
+            // Calculate current Y position
+            let screenHeight = UIScreen.main.bounds.height
+            let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
+            let totalDistance = screenHeight * 0.6
+            let currentYPos = word.yPos + CGFloat(progress * Double(totalDistance))
+            
+            // Game over line is at approximately 50% of screen height
+            let gameOverLineY = screenHeight * 0.5
+            
+            // Check if word has reached the game over line
+            if currentYPos >= gameOverLineY {
+                let contains = viewModel.gameList.words.contains { $0.id == word.id }
+                
+                if contains {
+                    print("Word \(word.word) reached bottom")
+                    word.dead = true
+                    viewModel.gameList.words.removeAll(where: {$0.id == word.id})
+                    viewModel.playerLife -= 1
+                    viewModel.checkDead()
+                    
+                    // Unregister the word from the falling controller
+                    fallingController.unregisterWord(word.id)
+                }
+            }
         }
-    }
 }

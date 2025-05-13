@@ -112,27 +112,31 @@ class GameEngine: ObservableObject {
         }
     }
     
-    // Word spawning and management
-    func spawnWord() {
-        let newWord = wordGenerating.getNextWord()
-        if newWord == "FALLBACK" || newWord.isEmpty {
-            print("Word pool is empty or returning fallback")
-            return
-        }
-        
-        let xPositions: [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70, 90, 130]
-        
-        if let xPos = xPositions.randomElement() {
-            let word = Word(word: newWord, xPos: xPos, yPos: -400)
-            print("Spawning new word: \(newWord) at position \(xPos)")
-            words.append(word)
-            lastSpawnTime = elapsedTime
-            
-            // Notify observers of change
-            objectWillChange.send()
-        }
-    }
     
+    // Word spawning and management
+        func spawnWord() {
+            let newWord = wordGenerating.getNextWord()
+            if newWord == "FALLBACK" || newWord.isEmpty {
+                print("Word pool is empty or returning fallback")
+                return
+            }
+            
+            let xPositions: [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70, 90, 130]
+            
+            // Get the screen height to properly position words off-screen
+            let screenHeight = UIScreen.main.bounds.height
+            let startYPos = -screenHeight * 0.1 // Position slightly above the visible area
+            
+            if let xPos = xPositions.randomElement() {
+                let word = Word(word: newWord, xPos: xPos, yPos: startYPos)
+                print("Spawning new word: \(newWord) at position x: \(xPos), y: \(startYPos)")
+                words.append(word)
+                lastSpawnTime = elapsedTime
+                
+                // Notify observers of change
+                objectWillChange.send()
+            }
+        }
     func removeWord(_ id: UUID) {
         print("Removing word with ID: \(id)")
         words.removeAll { $0.id == id }

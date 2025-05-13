@@ -22,7 +22,7 @@ struct FallingWords: View {
                 Rectangle()
                     .frame(height: 10.0)
                     .foregroundColor(.red)
-                    .offset(y: 200)
+                    .offset(y: UIScreen.main.bounds.height * 0.35) // Position relative to screen size
             } else {
                 Text("No game")
             }
