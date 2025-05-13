@@ -10,7 +10,6 @@ struct WordFallingState: Equatable {
         return lhs.isFalling == rhs.isFalling &&
                abs(lhs.timer - rhs.timer) < 0.1 // Allow small floating point differences
     }
-    
 }
 
 class FallingWordsController: ObservableObject {
@@ -59,7 +58,8 @@ class FallingWordsController: ObservableObject {
             // Initial state is not falling, with zero timer
             wordAnimationStates[word.id] = WordFallingState(isFalling: false, timer: 0)
             
-            // Schedule animation to start with a small random delay
+            // Start falling immediately for better UX - no delay
+            // This ensures words start falling as soon as they appear
             DispatchQueue.main.async { [weak self] in
                 self?.startFallingAnimation(for: word.id)
             }
@@ -73,8 +73,9 @@ class FallingWordsController: ObservableObject {
     }
     
     func startFallingAnimation(for wordId: UUID) {
-        // Randomize start time slightly to create more natural falling
-        let randomDelay = Double.random(in: 0...0.5)
+        // Minimal random delay to create more natural falling pattern
+        // The smaller range makes words start falling almost immediately
+        let randomDelay = Double(0.0)
         wordAnimationStates[wordId] = WordFallingState(isFalling: true, timer: randomDelay)
         objectWillChange.send()
     }
