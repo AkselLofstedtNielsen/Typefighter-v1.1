@@ -59,6 +59,9 @@ struct WordView : View {
         // Get screen dimensions
         let screenHeight = UIScreen.main.bounds.height
         
+        // Reference the red line position (35% of screen height as defined in FallingWords.swift)
+        let gameOverLineY = screenHeight * 0.35
+        
         // Calculate the falling distance and progress
         let fallDistance = screenHeight * 0.5
         let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
@@ -66,19 +69,18 @@ struct WordView : View {
         // Calculate current position
         let currentYPos = word.yPos + (fallDistance * CGFloat(progress))
         
-        // Game over line position (red line)
-        let gameOverLineY = screenHeight * 0.5
-        
         // Check if word has reached the game over line
-        if currentYPos >= gameOverLineY - 20 {  // Add a small buffer for better detection
+        if currentYPos >= gameOverLineY {  // No need for buffer; use exact line position
             let contains = viewModel.gameList.words.contains { $0.id == word.id }
             
             if contains {
-                print("Word \(word.word) reached bottom")
+                print("Word \(word.word) reached bottom at position \(currentYPos), game over line is at \(gameOverLineY)")
+                
+                // Mark word as dead
                 word.dead = true
-                viewModel.gameList.words.removeAll(where: {$0.id == word.id})
-                viewModel.playerLife -= 1
-                viewModel.checkDead()
+                
+                // Tell the view model this word was missed (this will handle life decrement)
+                viewModel.wordMissed(wordId: word.id)
                 
                 // Unregister the word from the falling controller
                 fallingController.unregisterWord(word.id)

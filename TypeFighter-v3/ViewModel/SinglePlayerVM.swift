@@ -113,6 +113,28 @@ class SinglePlayerVM: ObservableObject {
         // Log the sync operation
         print("Synced game engine words (\(gameEngine.words.count)) with gameList")
     }
+    
+    // Called when a word is missed (reached the bottom line)
+    func wordMissed(wordId: UUID) {
+        print("Word missed with ID: \(wordId)")
+        
+        // First, tell the game engine to remove the word
+        gameEngine.removeWord(wordId)
+        
+        // Then explicitly decrement the lives in the game engine
+        gameEngine.decrementLives()
+        
+        // Update playerLife to show in UI
+        self.playerLife = gameEngine.lives
+        
+        // Sync the game list with the engine
+        syncGameEngineWithGameList()
+        
+        // Check if game is over due to losing all lives
+        checkDead()
+        
+        print("Lives remaining: \(playerLife)")
+    }
         
     func testing(letter: Character) {
         let result = gameEngine.processUserInput(letter: letter)
