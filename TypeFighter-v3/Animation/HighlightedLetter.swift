@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 struct HighlightedText: View {
-//Simple struct for the highlighted letters in the words, FIX- All letters that match are highlighted and not following the current word
+//Simple struct for the highlighted letters in the words, FIX- All letters that match are highlighted
 let text: String
 let matching: String
 

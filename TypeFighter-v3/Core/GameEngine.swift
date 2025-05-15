@@ -33,6 +33,7 @@ class GameEngine: ObservableObject {
     private var letterPosition: Int = 0
     private var wordsCompleted: Int = 0
     private var lastSpawnTime: Double = 0.0
+    private var remainingWordsToSpawn: Int = 10
     
     // Active timers
     private var gameTimer: Timer?
@@ -47,8 +48,8 @@ class GameEngine: ObservableObject {
     func startGame() {
         resetGameState()
         startTimers()
-        // Spawn initial word to get things going
-        spawnWord()
+        remainingWordsToSpawn = 10 // Or whatever number we want
+        spawnWord() // Spawn initial word
         lastSpawnTime = 0.0
     }
     
@@ -102,7 +103,7 @@ class GameEngine: ObservableObject {
         wordSpawnTimer = nil
     }
     
-    private func updateGameTime() {
+    func updateGameTime() {
         elapsedTime += 0.1
         
         // Calculate words per minute
@@ -110,33 +111,45 @@ class GameEngine: ObservableObject {
             let minutesElapsed = elapsedTime / 60.0
             wordsPerMinute = (Double(wordsCompleted) / minutesElapsed).roundToDecimal(1)
         }
+        
+        // Check if word pool is empty and stop spawning if needed
+        if wordGenerating.isPoolEmpty() && words.isEmpty {
+            wordSpawnTimer?.invalidate()
+            wordSpawnTimer = nil
+        }
     }
     
     
     // Word spawning and management
-        func spawnWord() {
-            let newWord = wordGenerating.getNextWord()
-            if newWord == "FALLBACK" || newWord.isEmpty {
-                print("Word pool is empty or returning fallback")
-                return
-            }
-            
-            let xPositions: [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70, 90, 130]
-            
-            // Get the screen height to properly position words off-screen
-            let screenHeight = UIScreen.main.bounds.height
-            let startYPos = -screenHeight * 0.1 // Position slightly above the visible area
-            
-            if let xPos = xPositions.randomElement() {
-                let word = Word(word: newWord, xPos: xPos, yPos: startYPos)
-                print("Spawning new word: \(newWord) at position x: \(xPos), y: \(startYPos)")
-                words.append(word)
-                lastSpawnTime = elapsedTime
-                
-                // Notify observers of change
-                objectWillChange.send()
-            }
+    func spawnWord() {
+        // Don't spawn if no words remain to be spawned
+        if remainingWordsToSpawn <= 0 {
+            print("No more words to spawn")
+            return
         }
+        
+        let newWord = wordGenerating.getNextWord()
+        if newWord == "FALLBACK" || newWord.isEmpty {
+            print("Word pool is empty or returning fallback")
+            return
+        }
+        
+        // Decrement remaining words count
+        remainingWordsToSpawn -= 1
+        
+        // Rest of your existing spawn code...
+        let xPositions: [CGFloat] = [-140, -120, -100, -80, -60, -40, 0, 30, 50, 70, 90, 130]
+        let screenHeight = UIScreen.main.bounds.height
+        let startYPos = -screenHeight * 0.1
+        
+        if let xPos = xPositions.randomElement() {
+            let word = Word(word: newWord, xPos: xPos, yPos: startYPos)
+            print("Spawning new word: \(newWord) at position x: \(xPos), y: \(startYPos)")
+            words.append(word)
+            lastSpawnTime = elapsedTime
+            objectWillChange.send()
+        }
+    }
     func removeWord(_ id: UUID) {
         print("Removing word with ID: \(id)")
         words.removeAll { $0.id == id }
@@ -252,8 +265,8 @@ class GameEngine: ObservableObject {
     }
     
     func isGameWon() -> Bool {
-        // Game is won when all words are cleared and no more words are available
-        return words.isEmpty && wordGenerating.isPoolEmpty()
+        // Game is won when all words are cleared AND no more words will spawn
+        return words.isEmpty && remainingWordsToSpawn <= 0
     }
     
     func handleBackspace() {

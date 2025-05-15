@@ -59,7 +59,7 @@ class RandomWordGenerator: WordGenerating {
     private var remainingWords: [String]
     private let wordLimit: Int
     
-    init(wordLimit: Int = 50) {
+    init(wordLimit: Int = 10) {
         self.wordLimit = wordLimit
         self.remainingWords = []
         resetWordPool()
