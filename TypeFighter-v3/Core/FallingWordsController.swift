@@ -5,7 +5,7 @@ struct WordFallingState: Equatable {
     var isFalling: Bool
     var timer: Double
     
-    // Explicitly conform to Equatable- not 100% sure what this does tbh
+    // Explicitly conform to Equatable- comparing the two
     static func == (lhs: WordFallingState, rhs: WordFallingState) -> Bool {
         return lhs.isFalling == rhs.isFalling &&
                abs(lhs.timer - rhs.timer) < 0.1 // Allow small floating point differences
