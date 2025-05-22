@@ -8,20 +8,17 @@ struct WordView : View {
     // Use an environment object for the falling words controller
     @EnvironmentObject var fallingController: FallingWordsController
     
+    // State to track if word has expired
+    @State private var hasExpired = false
+    
     var body: some View {
         HighlightedText(word.word, matching: viewModel.userText)
             .offset(x: word.xPos, y: calculateYPosition())
-            .animation(.linear(duration: viewModel.difficulty.fallingDuration), value: calculateYPosition())
+            // Only animate if word hasn't expired
+            .animation(hasExpired ? .none : .linear(duration: viewModel.difficulty.fallingDuration), value: calculateYPosition())
             .onAppear(perform: {
                 // Register word with falling controller
                 fallingController.registerWord(word)
-                
-                // Set up expiration callback
-                fallingController.onWordExpired = { [weak viewModel] expiredWordId in
-                    if expiredWordId == word.id {
-                        viewModel?.wordMissed(wordId: expiredWordId)
-                    }
-                }
             })
             .onDisappear {
                 // Unregister the word from the falling controller
@@ -42,6 +39,11 @@ struct WordView : View {
         // Define the game over line position (35% from top)
         let gameOverLineY = screenHeight * 0.35
         
+        // If word has expired or stopped falling, keep it at the game over line
+        if hasExpired || !animState.isFalling {
+            return gameOverLineY
+        }
+        
         if animState.isFalling {
             // Calculate progress based on time elapsed vs total falling duration
             let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
@@ -54,6 +56,7 @@ struct WordView : View {
             
             // Ensure word stops exactly at the finish line when time is up
             if progress >= 1.0 {
+                hasExpired = true
                 return gameOverLineY
             }
             

@@ -23,6 +23,9 @@ class FallingWordsController: ObservableObject {
     // Word tracking
     private var activeFallingWords: Set<UUID> = []
     
+    // Track expired words to prevent multiple callbacks
+    private var expiredWords: Set<UUID> = []
+    
     // Callback for when words expire
     var onWordExpired: ((UUID) -> Void)?
     
@@ -36,6 +39,7 @@ class FallingWordsController: ObservableObject {
     
     func start() {
         stopAnimationTimer()
+        expiredWords.removeAll()
         startAnimationTimer()
     }
     
@@ -43,12 +47,14 @@ class FallingWordsController: ObservableObject {
         stopAnimationTimer()
         wordAnimationStates.removeAll()
         activeFallingWords.removeAll()
+        expiredWords.removeAll()
     }
     
     func reset() {
         stop()
         wordAnimationStates.removeAll()
         activeFallingWords.removeAll()
+        expiredWords.removeAll()
     }
     
     func registerWord(_ word: Word) {
@@ -65,6 +71,7 @@ class FallingWordsController: ObservableObject {
     
     func unregisterWord(_ wordId: UUID) {
         activeFallingWords.remove(wordId)
+        expiredWords.remove(wordId)
         if let removedState = wordAnimationStates.removeValue(forKey: wordId) {
             print("Unregistered word (ID: \(wordId)) after \(removedState.timer) seconds")
         }
@@ -102,7 +109,7 @@ class FallingWordsController: ObservableObject {
         guard let engine = gameEngine else { return }
         
         var hasUpdates = false
-        var expiredWords: [UUID] = []
+        var wordsToExpire: [UUID] = []
         
         // Ensure all words in the game engine are registered
         for word in engine.words {
@@ -119,28 +126,24 @@ class FallingWordsController: ObservableObject {
                 wordAnimationStates[wordId] = animState
                 hasUpdates = true
                 
-                // Check if word has expired based on difficulty
-                if animState.timer >= engine.difficulty.fallingDuration {
-                    expiredWords.append(wordId)
+                // Check if word has expired based on difficulty and hasn't already been marked as expired
+                if animState.timer >= engine.difficulty.fallingDuration && !expiredWords.contains(wordId) {
+                    wordsToExpire.append(wordId)
+                    expiredWords.insert(wordId) // Mark as expired to prevent duplicate calls
                     print("Word \(wordId) expired after \(animState.timer) seconds (limit: \(engine.difficulty.fallingDuration))")
-                }
-                
-                // Debug print every second
-                if Int(animState.timer * 10) % 10 == 0 {
-                    print("Word ID \(wordId) timer: \(String(format: "%.1f", animState.timer))s")
                 }
             }
         }
         
         // Handle expired words
-        for wordId in expiredWords {
+        for wordId in wordsToExpire {
             // Stop the word from falling
             if var animState = wordAnimationStates[wordId] {
                 animState.isFalling = false
                 wordAnimationStates[wordId] = animState
             }
             
-            // Notify about expiration
+            // Notify about expiration - this should trigger word removal
             onWordExpired?(wordId)
             hasUpdates = true
         }
