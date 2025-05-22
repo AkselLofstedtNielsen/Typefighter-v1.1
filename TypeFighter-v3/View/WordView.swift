@@ -1,10 +1,3 @@
-//
-//  WordView.swift
-//  TypeFighter-v3
-//
-//  Updated on 2025-05-08.
-//
-
 import Foundation
 import SwiftUI
 
@@ -15,37 +8,61 @@ struct WordView : View {
     // Use an environment object for the falling words controller
     @EnvironmentObject var fallingController: FallingWordsController
     
+    // State to track if word has expired
+    @State private var hasExpired = false
+    
     var body: some View {
         HighlightedText(word.word, matching: viewModel.userText)
-            .offset(x: word.xPos, y: fallingController.isWordFalling(word.id) ? 200 : word.yPos)
-            .animation(.linear(duration: viewModel.difficulty.fallingDuration), value: fallingController.isWordFalling(word.id))
+            .offset(x: word.xPos, y: calculateYPosition())
+            // Only animate if word hasn't expired
+            .animation(hasExpired ? .none : .linear(duration: viewModel.difficulty.fallingDuration), value: calculateYPosition())
             .onAppear(perform: {
                 // Register word with falling controller
                 fallingController.registerWord(word)
-                
-                // Schedule check for word reaching bottom
-                DispatchQueue.main.asyncAfter(deadline: .now() + viewModel.difficulty.fallingDuration) {
-                    let contains = viewModel.gameList.words.contains { contain in
-                        return contain.id == word.id
-                    }
-                    
-                    if contains {
-                        print("Word \(word.word) reached bottom")
-                        word.dead = true
-                        viewModel.gameList.words.removeAll(where: {$0.id == word.id})
-                        viewModel.playerLife -= 1
-                        viewModel.checkDead()
-                        
-                        // Unregister the word from the falling controller
-                        fallingController.unregisterWord(word.id)
-                    }
-                }
             })
             .onDisappear {
-                // Make sure we unregister the word when the view disappears
+                // Unregister the word from the falling controller
                 fallingController.unregisterWord(word.id)
             }
             .foregroundColor(.white)
             .font(.system(size:24, weight: .bold, design: .rounded))
+    }
+    
+    private func calculateYPosition() -> CGFloat {
+        guard let animState = fallingController.wordAnimationStates[word.id] else {
+            return word.yPos
+        }
+        
+        // Get screen dimensions
+        let screenHeight = UIScreen.main.bounds.height
+        
+        // Define the game over line position (35% from top)
+        let gameOverLineY = screenHeight * 0.35
+        
+        // If word has expired or stopped falling, keep it at the game over line
+        if hasExpired || !animState.isFalling {
+            return gameOverLineY
+        }
+        
+        if animState.isFalling {
+            // Calculate progress based on time elapsed vs total falling duration
+            let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
+            
+            // Calculate total falling distance from starting position to game over line
+            let totalFallDistance = gameOverLineY - word.yPos
+            
+            // Calculate current position based on time progress
+            let calculatedY = word.yPos + (totalFallDistance * CGFloat(progress))
+            
+            // Ensure word stops exactly at the finish line when time is up
+            if progress >= 1.0 {
+                hasExpired = true
+                return gameOverLineY
+            }
+            
+            return calculatedY
+        }
+        
+        return word.yPos
     }
 }

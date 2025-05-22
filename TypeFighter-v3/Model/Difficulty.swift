@@ -15,11 +15,11 @@ enum Difficulty: String, CaseIterable, Identifiable {
     var fallingDuration: Double {
         switch self {
         case .easy:
-            return 10
+            return 8.0      // 8 seconds to type the word
         case .medium:
-            return 7.0
+            return 6.0      // 6 seconds to type the word
         case .hard:
-            return 4.5
+            return 4.0      // 4 seconds to type the word
         }
     }
     
