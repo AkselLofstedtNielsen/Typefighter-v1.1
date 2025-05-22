@@ -35,16 +35,18 @@ struct WordView : View {
         // Get screen dimensions
         let screenHeight = UIScreen.main.bounds.height
         
-        // Calculate the falling distance - from top to the red line (which is at 35% screen height)
-        let fallDistance = screenHeight * 0.5
+        // Define the game over line position (35% from top as defined in FallingWords.swift)
+        let gameOverLineY = screenHeight * 0.35
         
         if animState.isFalling {
-            // Calculate progress as a percentage of the falling duration
+            // Calculate progress based on time elapsed vs total falling duration
             let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
             
-            // Calculate the position based on progress
-            // Start at the initial position (typically negative or 0) and move down
-            return word.yPos + (fallDistance * CGFloat(progress))
+            // Calculate total falling distance from starting position to game over line
+            let totalFallDistance = gameOverLineY - word.yPos
+            
+            // Calculate current position based on time progress
+            return word.yPos + (totalFallDistance * CGFloat(progress))
         }
         
         return word.yPos
@@ -56,25 +58,12 @@ struct WordView : View {
             return
         }
         
-        // Get screen dimensions
-        let screenHeight = UIScreen.main.bounds.height
-        
-        // Reference the red line position (35% of screen height as defined in FallingWords.swift)
-        let gameOverLineY = screenHeight * 0.35
-        
-        // Calculate the falling distance and progress
-        let fallDistance = screenHeight * 0.5
-        let progress = min(animState.timer / viewModel.difficulty.fallingDuration, 1.0)
-        
-        // Calculate current position
-        let currentYPos = word.yPos + (fallDistance * CGFloat(progress))
-        
-        // Check if word has reached the game over line
-        if currentYPos >= gameOverLineY {  // No need for buffer; use exact line position
+        // Check if the falling time has exceeded the difficulty duration
+        if animState.timer >= viewModel.difficulty.fallingDuration {
             let contains = viewModel.gameList.words.contains { $0.id == word.id }
             
             if contains {
-                print("Word \(word.word) reached bottom at position \(currentYPos), game over line is at \(gameOverLineY)")
+                print("Word \(word.word) fell for \(animState.timer) seconds (max: \(viewModel.difficulty.fallingDuration))")
                 
                 // Mark word as dead
                 word.dead = true
