@@ -17,6 +17,7 @@ struct FallingWords: View {
             if viewModel.gameRunning {
                 ForEach(viewModel.gameList.words) { word in
                     WordView(viewModel: viewModel, word: word)
+                        .id(word.id)
                 }
                 
                 Rectangle()
@@ -35,6 +36,13 @@ struct FallingWords: View {
         }
         .onDisappear {
             fallingController.stop()
+        }
+        .onChange(of: viewModel.gameRunning) { isRunning in
+            if isRunning {
+                fallingController.start()
+            } else {
+                fallingController.stop()
+            }
         }
     }
 }

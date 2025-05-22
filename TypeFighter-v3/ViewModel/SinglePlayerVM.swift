@@ -1,9 +1,14 @@
 import Foundation
+import Combine
 
 class SinglePlayerVM: ObservableObject {
     // Engine and state machine
     private let gameEngine: GameEngine
     private let stateMachine: GameStateMachine
+    
+    // Timer for continuous UI updates
+    private var uiUpdateTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     
     // Published properties for UI binding
     @Published var gameState: GameState = .notStarted
@@ -46,8 +51,15 @@ class SinglePlayerVM: ObservableObject {
         // Set up publisher subscriptions
         setupSubscriptions()
         
+        // Start continuous UI updates
+        startUIUpdateTimer()
+        
         // Log initialization
         print("SinglePlayerVM initialized with \(gameList.gameWords.count) words in the pool")
+    }
+    
+    deinit {
+        stopUIUpdateTimer()
     }
     
     // Expose game engine to the falling words controller
@@ -58,142 +70,239 @@ class SinglePlayerVM: ObservableObject {
     private func setupStateMachineCallbacks() {
         stateMachine.onGameStart = { [weak self] in
             guard let self = self else { return }
-            self.gameRunning = true
-            self.isTimerRunning = true
-            self.playerLife = 3
-            
-            // Update the gameList.words to match what's in gameEngine
             DispatchQueue.main.async {
+                self.gameRunning = true
+                self.isTimerRunning = true
+                self.playerLife = 3
+                
+                // Update the gameList.words to match what's in gameEngine
                 self.syncGameEngineWithGameList()
+                
+                print("Game started!")
             }
-            
-            print("Game started!")
         }
         
         stateMachine.onGamePause = { [weak self] in
-            self?.isTimerRunning = false
-            print("Game paused")
+            DispatchQueue.main.async {
+                self?.isTimerRunning = false
+                print("Game paused")
+            }
         }
         
         stateMachine.onGameResume = { [weak self] in
-            self?.isTimerRunning = true
-            print("Game resumed")
+            DispatchQueue.main.async {
+                self?.isTimerRunning = true
+                print("Game resumed")
+            }
         }
         
         stateMachine.onGameWin = { [weak self] in
-            self?.gameWon = true
-            self?.gameRunning = false
-            print("Game won!")
+            DispatchQueue.main.async {
+                self?.gameWon = true
+                self?.gameRunning = false
+                print("Game won!")
+            }
         }
         
         stateMachine.onGameLose = { [weak self] in
-            self?.gameLost = true
-            self?.gameRunning = false
-            print("Game lost!")
+            DispatchQueue.main.async {
+                self?.gameLost = true
+                self?.gameRunning = false
+                print("Game lost!")
+            }
         }
         
         stateMachine.onStateChange = { [weak self] state in
-            self?.gameState = state
-            print("Game state changed to: \(state.displayName)")
+            DispatchQueue.main.async {
+                self?.gameState = state
+                print("Game state changed to: \(state.displayName)")
+            }
         }
     }
     
     private func setupSubscriptions() {
-        // Maybe Combine later
+        // Subscribe to game engine changes
+        gameEngine.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.syncGameEngineWithUI()
+            }
+            .store(in: &cancellables)
+    }
+    
+    // CRITICAL FIX: Continuous UI update timer
+    private func startUIUpdateTimer() {
+        stopUIUpdateTimer()
+        
+        uiUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.updateUI()
+            }
+        }
+        
+        // Ensure timer runs on main run loop
+        if let timer = uiUpdateTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+    
+    private func stopUIUpdateTimer() {
+        uiUpdateTimer?.invalidate()
+        uiUpdateTimer = nil
+    }
+    
+    private func updateUI() {
+        guard gameRunning else { return }
+        
+        // Sync all UI properties with game engine
+        if elapsedTime != gameEngine.elapsedTime {
+            elapsedTime = gameEngine.elapsedTime
+        }
+        
+        if score != gameEngine.score {
+            score = gameEngine.score
+        }
+        
+        if wordsPerMinute != gameEngine.wordsPerMinute {
+            wordsPerMinute = gameEngine.wordsPerMinute
+        }
+        
+        if playerLife != gameEngine.lives {
+            playerLife = gameEngine.lives
+        }
+        
+        // Sync words
+        syncGameEngineWithGameList()
     }
     
     // Sync the game engine's words with gameList.words for display
     private func syncGameEngineWithGameList() {
-        // Replace the entire words array from the engine
-        gameList.words = gameEngine.words
+        // Only update if there are actual changes
+        let engineWordIds = Set(gameEngine.words.map { $0.id })
+        let gameListWordIds = Set(gameList.words.map { $0.id })
         
-        // Force UI refresh
-        objectWillChange.send()
-        
-        // Log the sync operation
-        print("Synced game engine words (\(gameEngine.words.count)) with gameList")
+        if engineWordIds != gameListWordIds {
+            gameList.words = gameEngine.words
+            objectWillChange.send()
+            print("Synced game engine words (\(gameEngine.words.count)) with gameList")
+        }
+    }
+    
+    // Sync UI properties with game engine
+    private func syncGameEngineWithUI() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.elapsedTime = self.gameEngine.elapsedTime
+            self.score = self.gameEngine.score
+            self.wordsPerMinute = self.gameEngine.wordsPerMinute
+            self.playerLife = self.gameEngine.lives
+            
+            self.syncGameEngineWithGameList()
+        }
     }
     
     // Called when a word is missed (reached the bottom line)
     func wordMissed(wordId: UUID) {
         print("Word missed with ID: \(wordId)")
         
-        // First, tell the game engine to remove the word
-        gameEngine.removeWord(wordId)
-        
-        // Then explicitly decrement the lives in the game engine
-        gameEngine.decrementLives()
-        
-        // Update playerLife to show in UI
-        self.playerLife = gameEngine.lives
-        
-        // Sync the game list with the engine
-        syncGameEngineWithGameList()
-        
-        // Check if game is over due to losing all lives
-        checkDead()
-        
-        print("Lives remaining: \(playerLife)")
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // First, tell the game engine to remove the word
+            self.gameEngine.removeWord(wordId)
+            
+            // Then explicitly decrement the lives in the game engine
+            self.gameEngine.decrementLives()
+            
+            // Update playerLife to show in UI
+            self.playerLife = self.gameEngine.lives
+            
+            // Sync the game list with the engine
+            self.syncGameEngineWithGameList()
+            
+            // Check if game is over due to losing all lives
+            self.checkDead()
+            
+            // Force UI update
+            self.objectWillChange.send()
+            
+            print("Lives remaining: \(self.playerLife)")
+        }
     }
         
     func testing(letter: Character) {
         let result = gameEngine.processUserInput(letter: letter)
         
-        // Update UI based on result
-        switch result {
-        case .noMatch:
-            // Handle no match case - leave text as is
-            break
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             
-        case .partialMatch(_, _):
-            // Update UI to show partial match
-            userText = gameEngine.currentTypedWord
+            // Update UI based on result
+            switch result {
+            case .noMatch:
+                // Handle no match case - leave text as is
+                break
+                
+            case .partialMatch(_, _):
+                // Update UI to show partial match
+                self.userText = self.gameEngine.currentTypedWord
+                
+            case .completeMatch(wordId: _, score: _):
+                // Word completed - clear text field immediately
+                self.userText = ""
+                
+                // Make sure the UI is updated to remove the word immediately
+                self.syncGameEngineWithGameList()
+                
+                // Force UI refresh
+                self.objectWillChange.send()
+                
+                // Check if game is won or lost
+                self.stateMachine.checkGameStatus()
+                
+                return // Exit early
+            }
             
-        case .completeMatch(wordId: let wordId, score: _):
-            // Word completed - clear text field immediately
-            userText = ""
-            
-            // Make sure the UI is updated to remove the word immediately
-            syncGameEngineWithGameList()
-            
-            // Force UI refresh
-            objectWillChange.send()
-            
-            // Check if game is won or lost
-            stateMachine.checkGameStatus()
-            
-            return // Exit early
+            // Sync game engine with game list for non-complete matches
+            self.syncGameEngineWithGameList()
         }
-        
-        // Sync game engine with game list for non-complete matches
-        syncGameEngineWithGameList()
     }
 
     
     func handleBackspace() {
         gameEngine.handleBackspace()
-        userText = gameEngine.currentTypedWord
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.userText = self.gameEngine.currentTypedWord
+        }
     }
     
     func resetWord() {
-        userText = ""
+        DispatchQueue.main.async { [weak self] in
+            self?.userText = ""
+        }
     }
     
     func restartGame() {
-        // Reset game state
-        gameWon = false
-        gameLost = false
-        userText = ""
-        elapsedTime = 0.0
-        score = 0
-        
-        // Ensure we have words in the game
-        gameList.fillList()
-        
-        // Start the game
-        stateMachine.startGame()
-        
-        print("Game restarted with \(gameList.gameWords.count) words in the pool")
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Reset game state
+            self.gameWon = false
+            self.gameLost = false
+            self.userText = ""
+            self.elapsedTime = 0.0
+            self.score = 0
+            
+            // Ensure we have words in the game
+            self.gameList.fillList()
+            
+            // Start the game
+            self.stateMachine.startGame()
+            
+            print("Game restarted with \(self.gameList.gameWords.count) words in the pool")
+        }
     }
     
     func checkDead() {

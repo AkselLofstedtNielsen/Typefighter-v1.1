@@ -15,6 +15,13 @@ struct WordView : View {
             .onAppear(perform: {
                 // Register word with falling controller
                 fallingController.registerWord(word)
+                
+                // Set up expiration callback
+                fallingController.onWordExpired = { [weak viewModel] expiredWordId in
+                    if expiredWordId == word.id {
+                        viewModel?.wordMissed(wordId: expiredWordId)
+                    }
+                }
             })
             .onDisappear {
                 // Unregister the word from the falling controller
@@ -22,9 +29,6 @@ struct WordView : View {
             }
             .foregroundColor(.white)
             .font(.system(size:24, weight: .bold, design: .rounded))
-            .onChange(of: fallingController.wordAnimationStates[word.id]) { _ in
-                checkWordFall()
-            }
     }
     
     private func calculateYPosition() -> CGFloat {
@@ -35,7 +39,7 @@ struct WordView : View {
         // Get screen dimensions
         let screenHeight = UIScreen.main.bounds.height
         
-        // Define the game over line position (35% from top as defined in FallingWords.swift)
+        // Define the game over line position (35% from top)
         let gameOverLineY = screenHeight * 0.35
         
         if animState.isFalling {
@@ -46,34 +50,16 @@ struct WordView : View {
             let totalFallDistance = gameOverLineY - word.yPos
             
             // Calculate current position based on time progress
-            return word.yPos + (totalFallDistance * CGFloat(progress))
+            let calculatedY = word.yPos + (totalFallDistance * CGFloat(progress))
+            
+            // Ensure word stops exactly at the finish line when time is up
+            if progress >= 1.0 {
+                return gameOverLineY
+            }
+            
+            return calculatedY
         }
         
         return word.yPos
-    }
-    
-    private func checkWordFall() {
-        guard let animState = fallingController.wordAnimationStates[word.id],
-              animState.isFalling else {
-            return
-        }
-        
-        // Check if the falling time has exceeded the difficulty duration
-        if animState.timer >= viewModel.difficulty.fallingDuration {
-            let contains = viewModel.gameList.words.contains { $0.id == word.id }
-            
-            if contains {
-                print("Word \(word.word) fell for \(animState.timer) seconds (max: \(viewModel.difficulty.fallingDuration))")
-                
-                // Mark word as dead
-                word.dead = true
-                
-                // Tell the view model this word was missed (this will handle life decrement)
-                viewModel.wordMissed(wordId: word.id)
-                
-                // Unregister the word from the falling controller
-                fallingController.unregisterWord(word.id)
-            }
-        }
     }
 }
