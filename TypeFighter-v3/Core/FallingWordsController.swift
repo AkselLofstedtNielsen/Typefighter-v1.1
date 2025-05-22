@@ -5,7 +5,7 @@ struct WordFallingState: Equatable {
     var isFalling: Bool
     var timer: Double
     
-    // Explicitly conform to Equatable
+    // Explicitly conform to Equatable- not 100% sure what this does tbh
     static func == (lhs: WordFallingState, rhs: WordFallingState) -> Bool {
         return lhs.isFalling == rhs.isFalling &&
                abs(lhs.timer - rhs.timer) < 0.1 // Allow small floating point differences
@@ -63,18 +63,10 @@ class FallingWordsController: ObservableObject {
         }
     }
     
-    /// Remove a word from being tracked
     func unregisterWord(_ wordId: UUID) {
         activeFallingWords.remove(wordId)
         if let removedState = wordAnimationStates.removeValue(forKey: wordId) {
             print("Unregistered word (ID: \(wordId)) after \(removedState.timer) seconds")
-        }
-    }
-    
-    func startFallingAnimation(for wordId: UUID) {
-        // This method is no longer needed since we start falling immediately in registerWord
-        if wordAnimationStates[wordId] != nil {
-            wordAnimationStates[wordId]?.isFalling = true
         }
     }
     
@@ -128,7 +120,7 @@ class FallingWordsController: ObservableObject {
                 hasUpdates = true
                 
                 // Check if word has expired based on difficulty
-                if animState.timer > engine.difficulty.fallingDuration {
+                if animState.timer >= engine.difficulty.fallingDuration {
                     expiredWords.append(wordId)
                     print("Word \(wordId) expired after \(animState.timer) seconds (limit: \(engine.difficulty.fallingDuration))")
                 }
