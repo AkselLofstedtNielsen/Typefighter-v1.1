@@ -2,94 +2,113 @@
 //  WordGenerating.swift
 //  TypeFighter-v3
 //
-//  Created by Aksel Nielsen on 2025-05-07.
+//  Updated implementation to prevent word repetition
 //
 
 import Foundation
 
-
 protocol WordGenerating {
     func getNextWord() -> String
     func isPoolEmpty() -> Bool
+    func resetPool() // Add this to allow pool reset for new games
 }
 
-// Implementation for the existing WordListSinglePlayer
+// Fixed implementation that prevents word repetition
 class WordListGenerator: WordGenerating {
     private let wordList: WordListSinglePlayer
-    private var usedWords: Set<UUID> = []
+    private var availableWords: [Word] = [] // Words that haven't been used yet
+    private var usedWords: [Word] = [] // Words that have been used
     
     init(wordList: WordListSinglePlayer) {
         self.wordList = wordList
         // Make sure we have words loaded
         wordList.fillList()
-        print("WordListGenerator initialized with \(wordList.gameWords.count) words")
+        resetPool() // Initialize available words
+        print("WordListGenerator initialized with \(availableWords.count) available words")
     }
     
     func getNextWord() -> String {
-        // If we have a random word from the list, return it
-        if let randomWord = wordList.gameWords.randomElement() {
-            // Track this word as used
-            usedWords.insert(randomWord.id)
-            
-            // Keep it in gameWords but mark as used
-            // This prevents removing from the source array which could be causing issues
-            print("Returning word: \(randomWord.word)")
-            return randomWord.word
+        // Check if we have any available words
+        guard !availableWords.isEmpty else {
+            print("No more words available, pool is empty")
+            return "FALLBACK"
         }
         
-        print("No words available, returning fallback")
-        // Fallback to a default word if none available
-        return "FALLBACK"
+        // Get a random word from available words
+        let randomIndex = Int.random(in: 0..<availableWords.count)
+        let selectedWord = availableWords.remove(at: randomIndex)
+        
+        // Move it to used words
+        usedWords.append(selectedWord)
+        
+        print("Returning word: \(selectedWord.word) (\(availableWords.count) remaining)")
+        return selectedWord.word
     }
     
     func isPoolEmpty() -> Bool {
-        // Check if all words have been used
-        return usedWords.count >= wordList.gameWords.count
+        return availableWords.isEmpty
+    }
+    
+    func resetPool() {
+        // Reset the pool by moving all words back to available
+        availableWords = wordList.gameWords.map { word in
+            // Create new instances to avoid reference issues
+            Word(word: word.word, xPos: 0, yPos: 0)
+        }
+        usedWords.removeAll()
+        print("Word pool reset with \(availableWords.count) words available")
+    }
+    
+    // Debug function to see current state
+    func debugPrintPoolState() {
+        print("=== WordListGenerator State ===")
+        print("Available words: \(availableWords.count)")
+        print("Used words: \(usedWords.count)")
+        if !availableWords.isEmpty {
+            print("Next few available: \(availableWords.prefix(3).map { $0.word })")
+        }
     }
 }
 
-// Example of a random word generator for testing
+// Keep the RandomWordGenerator as an alternative for testing
 class RandomWordGenerator: WordGenerating {
     private let wordPool = [
         "SWIFT", "CODING", "APPLE", "XCODE", "MOBILE",
-        "DESIGN", "PATTERN", "FRAMEWORK", "INTERFACE", "KEYBOARD",
-        "SCREEN", "BUTTON", "GESTURE", "ANIMATION", "LAYOUT"
+        "DESIGN", "PATTERN", "FRAME", "FACE", "KEY",
+        "SCREEN", "BUTTON", "GESTURE", "ANIMATE", "LAYOUT"
     ]
     
-    private var remainingWords: [String]
+    private var availableWords: [String]
     private let wordLimit: Int
     
     init(wordLimit: Int = 10) {
         self.wordLimit = wordLimit
-        self.remainingWords = []
-        resetWordPool()
+        self.availableWords = []
+        resetPool()
     }
     
     func getNextWord() -> String {
-        if remainingWords.isEmpty {
-            resetWordPool()
+        guard !availableWords.isEmpty else {
+            print("RandomWordGenerator: No more words available")
+            return "DEFAULT"
         }
         
-        if let word = remainingWords.popLast() {
-            return word
-        }
+        // Remove and return a random word
+        let randomIndex = Int.random(in: 0..<availableWords.count)
+        let word = availableWords.remove(at: randomIndex)
         
-        return "DEFAULT"
+        print("RandomWordGenerator returning: \(word) (\(availableWords.count) remaining)")
+        return word
     }
     
     func isPoolEmpty() -> Bool {
-        return remainingWords.isEmpty
+        return availableWords.isEmpty
     }
     
-    private func resetWordPool() {
-        // Create a new pool with repeated words to match word limit
-        var pool: [String] = []
-        
-        for _ in 0..<(wordLimit / wordPool.count + 1) {
-            pool.append(contentsOf: wordPool)
-        }
-        
-        // Shuffle the pool and limit it
-        remainingWords = pool.shuffled().prefix(wordLimit).map { $0 }
+    func resetPool() {
+        // Create a pool with limited number of words, no repetition
+        let shuffledPool = wordPool.shuffled()
+        availableWords = Array(shuffledPool.prefix(min(wordLimit, wordPool.count)))
+        print("RandomWordGenerator pool reset with \(availableWords.count) words")
     }
 }

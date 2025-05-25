@@ -42,7 +42,7 @@ struct WordView : View {
         // If word has expired or stopped falling, keep it at the game over line
         if hasExpired || !animState.isFalling {
             return gameOverLineY
-        }
+        } 
         
         if animState.isFalling {
             // Calculate progress based on time elapsed vs total falling duration

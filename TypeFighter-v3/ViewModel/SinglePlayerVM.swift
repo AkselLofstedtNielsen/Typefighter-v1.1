@@ -28,19 +28,27 @@ class SinglePlayerVM: ObservableObject {
             print("Difficulty changed to: \(difficulty.rawValue)")
         }
     }
-    
+    private let wordGenerator: WordGenerating
+
+    // Update the init method to store the word generator reference
     init() {
         // Initialize all stored properties first
         let initialGameList = WordListSinglePlayer()
         initialGameList.fillList()
         self.gameList = initialGameList
         
-        // Create word generator with the local variable
-        let wordGenerator = WordListGenerator(wordList: initialGameList)
+        // Create word generator and store reference
         
-        // Create game engine with local variable
+        //Old Swe list/Impl
+        //self.wordGenerator = WordListGenerator(wordList: initialGameList)
+        
+        //Eng list for testing / wordgenerating
+        self.wordGenerator = RandomWordGenerator(wordLimit: 15)
+
+        
+        // Create game engine with the word generator
         let initialDifficulty: Difficulty = .easy
-        self.gameEngine = GameEngine(difficulty: initialDifficulty, wordGenerating: wordGenerator)
+        self.gameEngine = GameEngine(difficulty: initialDifficulty, wordGenerating: self.wordGenerator)
         
         // Create state machine with engine
         self.stateMachine = GameStateMachine(gameEngine: self.gameEngine)
@@ -295,13 +303,16 @@ class SinglePlayerVM: ObservableObject {
             self.elapsedTime = 0.0
             self.score = 0
             
+            // IMPORTANT: Reset the word generator pool to prevent repetition
+            self.wordGenerator.resetPool()
+            
             // Ensure we have words in the game
             self.gameList.fillList()
             
             // Start the game
             self.stateMachine.startGame()
             
-            print("Game restarted with \(self.gameList.gameWords.count) words in the pool")
+            print("Game restarted with fresh word pool")
         }
     }
     
